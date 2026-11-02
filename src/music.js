@@ -75,6 +75,36 @@ const TRACKS = {
     mel: ['F#5 - A5 - C#6 - A5 F#5', 'D5 - F#5 - A5 - D6 -', 'C#6 - A5 - E5 - A5 -', 'B5 - G#5 - E5 - B4 -',
       'F#5 A5 C#6 - E6 - C#6 A5', 'F#5 - D5 - A4 - D5 -', 'E5 - A5 - C#6 - E6 -', 'G#5 - B5 - E6 - - -'],
   },
+  'web-scraper': {
+    bpm: 150, chords: 'Bm G D A', arp: true,
+    bass: 'x.x.o.x.x.x.o.x.', k: 'x...x...x...x...', s: '....x.......x...', h: 'x.xxx.xxx.xxx.xx',
+    mel: ['B4 D5 F#5 - B5 - F#5 D5', 'G5 - D5 - B4 - D5 -', 'A5 - F#5 - D5 - F#5 A5', 'C#6 - - A5 E5 - - -',
+      'B5 - A5 F#5 - D5 F#5 -', 'G5 - B5 - D6 - B5 G5', 'F#5 - A5 - D6 - C#6 A5', 'E5 - C#5 - A4 - - -'],
+  },
+  'reply-guys': {
+    bpm: 132, chords: 'C Em F G', arp: false,
+    bass: 'x..x..x.x..x..x.', k: 'x..x..x.x.......', s: '....x.......x..x', h: '..x...x...x...x.',
+    mel: ['C5 - . C5 E5 - G5 -', 'B4 - . B4 E5 - G5 -', 'A4 - . C5 F5 - A5 -', 'G5 - F5 - E5 - D5 -',
+      'E5 G5 C6 - B5 - G5 -', 'G5 - E5 - B4 - - -', 'F5 A5 C6 - A5 - F5 -', 'G5 - - - D5 - . .'],
+  },
+  'all-caps': {
+    bpm: 168, chords: 'Am Am F E', arp: true,
+    bass: 'xoxoxoxoxoxoxoxo', k: 'x..x..x.x..x..x.', s: '....x.......x...', h: 'xxxxxxxxxxxxxxxx',
+    mel: ['A5 A5 . A5 C6 - A5 -', 'E6 - D6 - C6 - B5 -', 'A5 A5 . A5 C6 - F6 -', 'E6 - - - G#5 - B5 -',
+      'A5 - C6 - E6 - C6 A5', 'B5 - G5 - E5 - B5 -', 'C6 - A5 - F5 - A5 C6', 'B5 - G#5 - E5 - - -'],
+  },
+  'hype-cycle': {
+    bpm: 140, chords: 'D Bm G A', arp: true,
+    bass: 'x...o.x.x...o.x.', k: 'x.......x.x.....', s: '....x.......x...', h: 'x.x.x.x.x.x.x.x.',
+    mel: ['D5 F#5 A5 - D6 - E6 F#6', 'D6 - B5 - F#5 - - -', 'G5 B5 D6 - G6 - F#6 E6', 'E6 - C#6 - A5 - - -',
+      'A5 - G5 F#5 - D5 - -', 'B4 - D5 - F#5 - B5 -', 'D6 - B5 - G5 - B5 D6', 'C#6 - E6 - A6 - - -'],
+  },
+  'dead-internet': {
+    bpm: 154, chords: 'Ebm B Gb Db', arp: true,
+    bass: 'x.x.x.x.x.x.x.x.', k: 'x...x...x...x...', s: '....x.......x...', h: 'x.xxx.xxx.xxx.xx',
+    mel: ['Eb5 - Gb5 - Bb5 - Gb5 -', 'B4 - Eb5 - Gb5 - Eb5 -', 'Gb5 - Bb5 - Db6 - Bb5 -', 'Ab5 - F5 - Db5 - - -',
+      'Bb5 - Ab5 Gb5 - Eb5 - -', 'Gb5 - Eb5 B4 - Eb5 Gb5 -', 'Db6 - Bb5 Gb5 - Bb5 Db6 -', 'Ab5 - - - F5 - Db5 -'],
+  },
   'the-hater': {
     bpm: 172, chords: 'Em C Am B', arp: true,
     bass: 'xoxoxoxoxoxoxoxo', k: 'x..xx...x..xx...', s: '....x.......x...', h: 'xxxxxxxxxxxxxxxx',

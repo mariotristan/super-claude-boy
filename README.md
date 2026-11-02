@@ -1,7 +1,7 @@
 # Super Claude Boy
 
 A tough-as-nails speedrun platformer in the spirit of Super Meat Boy, starring the Claude Code mascot.
-The Hater has kidnapped Byte. Run, wall-jump, and dodge AI slop, saws, and angry protesters to get them back.
+The Hater has kidnapped Byte. Run, wall-jump, and dodge AI slop, saws, scraper bots, reply guys and angry protesters to get them back.
 
 **Play:** https://mariotristan.github.io/super-claude-boy/
 
@@ -22,7 +22,7 @@ Super Claude Boy is a fan-made love letter to two things:
 - **[Super Meat Boy](https://supermeatboy.com/)** (Team Meat, 2010). It inspired the brutal-but-fair level design, instant respawns, wall jumps, the trail the hero leaves on every surface, the kidnapped friend, and the obsession with shaving milliseconds off a run.
 - **The Claude Code mascot**, the little orange pixel creature in the terminal, recast as a platform hero. His friend Byte stands in for Bandage Girl.
 
-The villains poke fun at the AI conversation from both sides. **AI slop** shows up as the hazards: oozing purple goo that bubbles up slop phrases ("delve", "tapestry", "✨synergy✨", "As an AI…") and the occasional six-fingered hand, glitchy "hallucinated" saws, and blobs with too many eyes that say "Great question!". **The Hater** and his sign-waving protesters stand in for the people who want no AI anywhere, ever. Beat him and the ending has a twist: he gets a demo and quietly updates his sign. It's all in good fun.
+The villains poke fun at the AI conversation from both sides. **AI slop** shows up as the hazards: oozing purple goo that bubbles up slop phrases ("delve", "tapestry", "✨synergy✨", "As an AI…") and the occasional six-fingered hand, glitchy "hallucinated" saws, and blobs with too many eyes that say "Great question!". **The Hater** and his sign-waving protesters stand in for the people who want no AI anywhere, ever. Later levels bring in more of the internet: **Scraper Bots** (drones that hum "robots.txt? lol" while patrolling set paths), **Hype Bros** (sprinting in fleece vests, yelling "AGI next week!"), **Reply Guys** (hopping on the spot, phone out: "Well, actually…") and **Keyboard Warriors** (raging at a laptop, firing ALL CAPS comments across the room). Beat him and the ending has a twist: he gets a demo and quietly updates his sign. It's all in good fun.
 
 The game was built with [Claude Code](https://claude.com/claude-code) as a small experiment in making a complete, polished, installable game with no engine and no build step.
 
@@ -55,7 +55,7 @@ Die more than three times on a level and the game starts showing tips for it.
 
 ## Levels
 
-Ten levels, then the credits:
+Fifteen levels, then the credits:
 
 | # | Level | What it teaches |
 |---|---|---|
@@ -68,7 +68,12 @@ Ten levels, then the credits:
 | 7 | Prompt Injection | A long run past walkers with saws over the pits |
 | 8 | Rate Limited | A chain of crumbling blocks under orbiting saws |
 | 9 | Merge Conflict | Everything at once, right before the boss |
-| 10 | The Hater | The boss throws signs and tomatoes while you climb to Byte |
+| 10 | Web Scraper | Scraper Bots patrolling over the pits, on lines, loops and lifts |
+| 11 | Reply Guys | Hopping Reply Guys in a low corridor and fast Hype Bros |
+| 12 | All Caps | Three floors of Keyboard Warriors firing ALL CAPS shots |
+| 13 | Hype Cycle | Up the peak of inflated expectations, through the trough, onto the plateau |
+| 14 | Dead Internet | Every new villain at once, up a bot-guarded shaft |
+| 15 | The Hater | The boss throws signs and tomatoes while you climb to Byte |
 
 ## How it's built
 
@@ -79,7 +84,7 @@ index.html        screens (title, intro, level select, results, pause, ending) a
 style.css         layout, touch controls, safe areas for the iPad notch and home bar
 src/main.js       game loop, rendering, camera, screens, saving, ghosts, intro and outro scenes
 src/physics.js    level parsing, movement, collision, saws, walkers, the boss (no DOM)
-src/levels.js     the ten levels as text maps, plus hints, tips and par times
+src/levels.js     the fifteen levels as text maps, plus hints, tips and par times
 src/sprites.js    pixel-art sprites written as strings, baked into small canvases at startup
 src/input.js      touch zones, keyboard and gamepad, merged into one input state
 src/audio.js      sound effects synthesized with Web Audio
@@ -98,7 +103,7 @@ tools/solve.mjs   proves every level can be finished
 
 ### Levels are text
 
-Each level in `src/levels.js` is a grid of characters: `#` solid, `^` slop, `c` crumbling block, `o` saw, `b` blob, `p` protester, `H` the boss, `S` start, `G` Byte. Moving saws are listed separately as paths or orbits. Editing a level means editing the map, then running the solver:
+Each level in `src/levels.js` is a grid of characters: `#` solid, `^` slop, `c` crumbling block, `o` saw, `b` blob, `p` protester, `f` Hype Bro, `r` Reply Guy, `k`/`K` Keyboard Warrior (facing left/right), `H` the boss, `S` start, `G` Byte. Moving saws are listed separately as paths or orbits; add `bot: true` to one and it becomes a Scraper Bot. Editing a level means editing the map, then running the solver:
 
 ```sh
 node tools/solve.mjs          # all levels
@@ -106,12 +111,12 @@ node tools/solve.mjs 5        # just level 6
 node tools/solve.mjs --static # ignore moving hazards
 ```
 
-The solver imports the game's real physics and does a breadth-first search over button presses (left, right or neither, with jump held or not, every 1/30 s). It replays the moving saws and walkers on the same timeline as the game, so a level only passes if there's a path that dodges them too. It prints the fastest path it found, which is where the par times come from. It doesn't model the boss's throws, and it treats crumbling blocks as solid.
+The solver imports the game's real physics and does a breadth-first search over button presses (left, right or neither, with jump held or not, every 1/30 s). It replays the moving saws, bots, walkers and Keyboard Warrior shots on the same timeline as the game, so a level only passes if there's a path that dodges them too. It prints the fastest path it found, which is where the par times come from. It doesn't model the boss's throws, and it treats crumbling blocks as solid.
 
 ### Drawing
 
 - **Pixel-perfect scaling.** The camera picks the largest whole-number scale that shows about 15 tiles of height, so every game pixel maps to an exact square of screen pixels: crisp on the iPad's Retina screen, with no seams between tiles.
-- **Sprites are strings.** Claude Boy, Byte, The Hater, protesters and blobs are drawn as rows of characters in `src/sprites.js` (one character per pixel, with a palette), baked once into small canvases and flipped for facing left.
+- **Sprites are strings.** Claude Boy, Byte, The Hater, protesters, blobs, Hype Bros, Reply Guys, Keyboard Warriors and Scraper Bots are drawn as rows of characters in `src/sprites.js` (one character per pixel, with a palette), baked once into small canvases and flipped for facing left.
 - **Juice:** squash and stretch on jumps and landings, an orange trail on every surface Claude Boy touches, particles and screen shake on death, a glitch effect on saws, and slop pools that bubble up AI clichés and the occasional six-fingered hand.
 - **Ghosts.** During a run the game records Claude Boy's position every other step. A new best time saves that recording, and the next attempt replays it as a translucent ghost.
 

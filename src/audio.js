@@ -38,6 +38,7 @@ const SOUNDS = {
   win: () => [523, 659, 784, 1047].forEach((f, i) => tone('square', f, f * 1.01, 0.14, 0.16, i * 0.08)),
   throw: () => tone('triangle', 600, 220, 0.14, 0.12),
   crumble: () => noise(0.18, 0.3, 400),
+  type: () => [0, 0.05, 0.1].forEach(d => tone('square', 1800, 1200, 0.02, 0.05, d)),
   splat: () => noise(0.08, 0.2, 1600),
   select: () => tone('square', 660, 700, 0.05, 0.12),
 };

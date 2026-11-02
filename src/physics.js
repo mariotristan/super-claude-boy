@@ -16,6 +16,8 @@ export const P = {
   coyote: 0.08, buffer: 0.1,
   crumbleTime: 0.35, crumbleRespawn: 2.5,
   shotGravity: 700,
+  hopV: 360, hopEvery: 1.3,          // Reply Guy
+  capsEvery: 1.6, capsSpeed: 110,    // Keyboard Warrior
 };
 
 // ---------------------------------------------------------------- level
@@ -35,7 +37,7 @@ export function parseLevel(def) {
         case 'S': lv.start = { x: x * T + (T - P.w) / 2, y: (y + 1) * T - P.h }; ch = '.'; break;
         case 'G': lv.goal = { x: x * T + 2, y: (y + 1) * T - 14, w: 12, h: 14 }; ch = '.'; break;
         case 'o': lv.saws.push({ cx: x * T + T / 2, cy: y * T + T / 2, r: 11 }); ch = '.'; break;
-        case 'b': case 'p': lv.walkers.push(makeWalker(ch, x, y)); ch = '.'; break;
+        case 'b': case 'p': case 'f': case 'r': case 'k': case 'K': lv.walkers.push(makeWalker(ch, x, y)); ch = '.'; break;
         case 'H': lv.hater = { x: x * T - 2, y: (y + 1) * T - 28, w: 20, h: 28, cool: 1.5, face: -1, anim: 0 }; ch = '.'; break;
         case 'c': lv.crumbles.set(y * w + x, { state: 'idle', timer: 0 }); break;
       }
@@ -43,7 +45,7 @@ export function parseLevel(def) {
     }
   }
   for (const s of def.saws || []) {
-    const saw = { r: s.r || 11, speed: s.speed || 60, cx: 0, cy: 0 };
+    const saw = { r: s.r || (s.bot ? 7 : 11), speed: s.speed || 60, cx: 0, cy: 0, bot: !!s.bot };
     if (s.orbit) {
       saw.ox = s.orbit[0] * T + T / 2; saw.oy = s.orbit[1] * T + T / 2;
       saw.rad = s.radius * T; saw.phase = s.phase || 0;
@@ -65,10 +67,24 @@ export function parseLevel(def) {
   return lv;
 }
 
-function makeWalker(kind, x, y) {
-  const w = kind === 'b' ? 14 : 10;
-  const h = kind === 'b' ? 10 : 16;
-  return { kind, x: x * T + (T - w) / 2, y: (y + 1) * T - h, w, h, dir: -1, speed: kind === 'b' ? 35 : 55 };
+// b slop blob, p protester, f Hype Bro (fast), r Reply Guy (hops in place),
+// k / K Keyboard Warrior facing left / right (stays put, types ALL CAPS shots).
+const WALKERS = {
+  b: { w: 14, h: 10, speed: 35 },
+  p: { w: 10, h: 16, speed: 55 },
+  f: { w: 10, h: 16, speed: 95 },
+  r: { w: 10, h: 16, speed: 0 },
+  k: { w: 14, h: 14, speed: 0 },
+};
+
+function makeWalker(ch, x, y) {
+  const kind = ch === 'K' ? 'k' : ch;
+  const { w, h, speed } = WALKERS[kind];
+  const b = { kind, x: x * T + (T - w) / 2, y: (y + 1) * T - h, w, h, dir: ch === 'K' ? 1 : -1, speed };
+  // stagger timers by column so neighbours don't move in lockstep
+  if (kind === 'r') { b.ground = b.y; b.vy = 0; b.cool = 0.4 + (x % 3) * 0.3; }
+  if (kind === 'k') { b.cool = 0.8 + (x % 2) * 0.5; b.anim = 0; b.fired = 0; }
+  return b;
 }
 
 export function tileAt(lv, tx, ty) {
@@ -229,6 +245,8 @@ export function updateWorld(lv, dt, p, ev) {
   }
 
   for (const b of lv.walkers) {
+    if (b.kind === 'r') { updateHopper(b, dt); continue; }
+    if (b.kind === 'k') { updateTyper(b, lv, dt, ev); continue; }
     const nx = b.x + b.dir * b.speed * dt;
     const ahead = b.dir > 0 ? nx + b.w : nx;
     const tx = Math.floor(ahead / T);
@@ -260,7 +278,7 @@ export function updateWorld(lv, dt, p, ev) {
   }
   for (let i = lv.shots.length - 1; i >= 0; i--) {
     const s = lv.shots[i];
-    s.vy += P.shotGravity * dt;
+    s.vy += (s.g ?? 1) * P.shotGravity * dt;
     s.x += s.vx * dt; s.y += s.vy * dt; s.rot += dt * 12;
     if (isSolid(lv, Math.floor(s.x / T), Math.floor(s.y / T)) || s.y > lv.h * T + 32) {
       ev.push({ type: 'shotHit', x: s.x, y: s.y, kind: s.kind });
@@ -268,6 +286,28 @@ export function updateWorld(lv, dt, p, ev) {
     }
   }
 }
+
+function updateHopper(b, dt) {
+  b.cool -= dt;
+  if (b.cool <= 0 && b.y >= b.ground) { b.vy = -P.hopV; b.cool = P.hopEvery; }
+  if (b.vy === 0) return;
+  b.vy += P.gravity * dt;
+  b.y += b.vy * dt;
+  if (b.y >= b.ground) { b.y = b.ground; b.vy = 0; }
+}
+
+function updateTyper(b, lv, dt, ev) {
+  b.cool -= dt;
+  if (b.anim > 0) b.anim -= dt;
+  if (b.cool > 0) return;
+  b.cool = P.capsEvery;
+  b.anim = 0.2;
+  const x = b.dir > 0 ? b.x + b.w : b.x;
+  lv.shots.push({ x, y: b.y + 6, r: 4, rot: 0, vx: b.dir * P.capsSpeed, vy: 0, g: 0, kind: 'caps', n: b.fired++ });
+  ev.push({ type: 'type', x, y: b.y + 6 });
+}
+
+const WALKER_DEATH = { b: 'slop', p: 'hater', f: 'hype', r: 'reply', k: 'caps' };
 
 // Returns a cause string if the player dies this step, else null.
 export function checkDeath(p, lv) {
@@ -281,15 +321,15 @@ export function checkDeath(p, lv) {
   for (const s of lv.saws) {
     const cx = Math.max(hx, Math.min(s.cx, hx + hw)), cy = Math.max(hy, Math.min(s.cy, hy + hh));
     const r = s.r - 1;
-    if ((cx - s.cx) ** 2 + (cy - s.cy) ** 2 < r * r) return 'saw';
+    if ((cx - s.cx) ** 2 + (cy - s.cy) ** 2 < r * r) return s.bot ? 'bot' : 'saw';
   }
   for (const b of lv.walkers)
-    if (overlap(hx, hy, hw, hh, b.x + 1, b.y + 1, b.w - 2, b.h - 1)) return b.kind === 'b' ? 'slop' : 'hater';
+    if (overlap(hx, hy, hw, hh, b.x + 1, b.y + 1, b.w - 2, b.h - 1)) return WALKER_DEATH[b.kind];
   const H = lv.hater;
   if (H && overlap(hx, hy, hw, hh, H.x + 2, H.y + 2, H.w - 4, H.h - 2)) return 'hater';
   for (const s of lv.shots) {
     const cx = Math.max(hx, Math.min(s.x, hx + hw)), cy = Math.max(hy, Math.min(s.y, hy + hh));
-    if ((cx - s.x) ** 2 + (cy - s.y) ** 2 < s.r * s.r) return 'hater';
+    if ((cx - s.x) ** 2 + (cy - s.y) ** 2 < s.r * s.r) return s.kind === 'caps' ? 'caps' : 'hater';
   }
   return null;
 }

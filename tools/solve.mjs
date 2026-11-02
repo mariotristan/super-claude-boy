@@ -1,6 +1,7 @@
 // Brute-force reachability check for every level using the real physics.
 // Moving saws and patrolling enemies are replayed on the same timeline the game uses
 // (the world starts when the player first moves), so a path found here dodges them too.
+// Keyboard Warriors fire on a fixed clock, so their shots are replayed too.
 // Not modelled: The Hater's throws, and crumbling blocks (treated as solid).
 // Usage: node tools/solve.mjs [levelIndex] [--static]   (--static ignores moving hazards)
 import { LEVELS } from '../src/levels.js';
@@ -19,7 +20,11 @@ function timeline(def, steps) {
   const snaps = [];
   for (let i = 0; i < steps; i++) {
     updateWorld(lv, DT, far, []);
-    snaps.push({ walkers: lv.walkers.map(w => ({ ...w })), saws: lv.saws.map(s => ({ cx: s.cx, cy: s.cy, r: s.r })) });
+    snaps.push({
+      walkers: lv.walkers.map(w => ({ ...w })),
+      saws: lv.saws.map(s => ({ cx: s.cx, cy: s.cy, r: s.r, bot: s.bot })),
+      shots: lv.shots.map(s => ({ x: s.x, y: s.y, r: s.r, kind: s.kind })),
+    });
   }
   return snaps;
 }
@@ -31,7 +36,7 @@ function solve(def, dynamic) {
   lv.hater = null;
   const statics = lv.saws.filter(s => !s.path && s.ox === undefined);
   const snaps = dynamic ? timeline(def, MAX_DEPTH * HOLD) : null;
-  if (!dynamic) { lv.walkers = []; lv.saws = statics; }
+  if (!dynamic) { lv.walkers = lv.walkers.filter(w => w.kind === 'k'); lv.saws = statics; }
 
   const seen = new Set();
   let frontier = [{ p: newPlayer(lv), held: false }];
@@ -48,6 +53,7 @@ function solve(def, dynamic) {
             const snap = snaps[(depth - 1) * HOLD + i];
             lv.walkers = snap.walkers;
             lv.saws = snap.saws;
+            lv.shots = snap.shots;
           }
           if (checkDeath(p, lv)) { alive = false; break; }
           if (touchesGoal(p, lv)) { won = true; break; }

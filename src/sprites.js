@@ -100,7 +100,12 @@ const PROTESTER_PAL = {
   k: '#1b1420', h: '#5A3A22', s: '#F1C9A5', S: '#D9A27E', K: '#141414',
   c: '#C8423B', C: '#962E29', n: '#34467A', N: '#243050', o: '#3A2A1E',
 };
-const PROTESTER_OUTFITS = [{}, { c: '#2E9C8F', C: '#1F6E65', h: '#C9A15A', n: '#4A4A55', N: '#33333B' }];
+const PROTESTER_OUTFITS = [
+  {},
+  { c: '#2E9C8F', C: '#1F6E65', h: '#C9A15A', n: '#4A4A55', N: '#33333B' },
+  { c: '#E0A93B', C: '#A67A25', h: '#2A1E16', s: '#C68A62', S: '#9E6A47', n: '#3D5A3D', N: '#2A3F2A' },
+  { c: '#8A5BC2', C: '#623F8C', h: '#D96A3A', n: '#2F2F3A', N: '#1F1F28' },
+];
 const PROTESTER_TOP = [
   '...kkkkk....',
   '..khhhhhk...',
@@ -141,11 +146,96 @@ const BLOB = [
   '..g..g...g...g..',
 ];
 
+// Hype Bro: 12x17, faces right. Same build as a protester: blond hair y, shades K, big grin W, fleece vest V/v over a white shirt w, khakis.
+const HYPE_PAL = {
+  k: '#1b1420', y: '#E8C65A', s: '#F1C9A5', S: '#D9A27E', K: '#141414', W: '#FFFFFF',
+  V: '#2F4F7A', v: '#213858', w: '#EDEDED', n: '#C8B48A', N: '#A08C64', o: '#3A2A1E',
+};
+const HYPE_TOP = [
+  '...kkkkk....',
+  '..kyyyyyk...',
+  '.kyyyyyyyk..',
+  '.kysssssyk..',
+  '.ksKKKsKKKk.',
+  '.ksKKKsKKKk.',
+  '.ksssssssSk.',
+  '.kssWWWWssk.',
+  '..kssssssk..',
+  '.kkVVwwVVVkk',
+  'kvVVVwwVVVVv',
+  'kvVVVwwVVVVv',
+  'ksvVVwwVVVsk',
+  '.kvvvwwvvvk.',
+];
+
+// Reply Guy: 12x17, faces right. Glasses, grey hoodie g/G, phone X with a glowing screen x held out front.
+const REPLY_PAL = {
+  k: '#1b1420', h: '#3A2A1E', s: '#F1C9A5', S: '#D9A27E', K: '#141414', W: '#BFE3FF',
+  g: '#8A929C', G: '#5E656E', X: '#2B2B33', x: '#6FD0FF', n: '#34467A', N: '#243050', o: '#3A2A1E',
+};
+const REPLY_TOP = [
+  '....kkkk....',
+  '...khhhhk...',
+  '..khhhhhhk..',
+  '..kssssssk..',
+  '.kKWKsKWKsk.',
+  '.kssssssssk.',
+  '.ksssKKssSk.',
+  '..kssssssk..',
+  '.kkggggggkk.',
+  'kGggggggggGk',
+  'kGggggggggGk',
+  'kGggggggsXxk',
+  'ksGgggggsXxk',
+  '.kGGGGGGGGk.',
+];
+
+// Keyboard Warrior: 16x14, faces right. Backwards cap r, headset H, shouting at a laptop L on a desk d/D.
+const TYPER_PAL = {
+  k: '#1b1420', r: '#C8423B', H: '#333340', s: '#F1C9A5', S: '#D9A27E', K: '#141414',
+  t: '#6B4FA0', L: '#7FE0FF', d: '#8A6239', D: '#5A3E22',
+};
+const TYPER = [
+  '..kkkkk.........',
+  '.krrrrrk........',
+  'krrrrrrrk.......',
+  'kHssssssk.......',
+  'kHsKssKsk.......',
+  'kHssssssk.kkkkk.',
+  '.kskkkksk.kLLLk.',
+  '..kssssk..kLLLk.',
+  '.kttttttk.kLLLk.',
+  'ktttttttsskkkkk.',
+  'kttttttkkkkkkkkk',
+  'kddddddddddddddk',
+  '.kDk........kDk.',
+  '.kDk........kDk.',
+];
+
+// Scraper Bot: 16x10 quadcopter, faces left. Metal m/M/L, camera lens e/E, status light r, rotors p (two frames).
+const BOT_PAL = {
+  k: '#1b1420', m: '#8F99A8', M: '#5A6372', L: '#C9D1DC', e: '#2FE6FF', E: '#1A8FA6', r: '#FF3B3B', p: '#D0D0D0',
+};
+const BOT_BODY = [
+  '...k........k...',
+  '..kkkkkkkkkkkk..',
+  '.kMmmmmmmmmmmMk.',
+  'kMkkkkmmmmmmmmMk',
+  'kMkeEkmmmmmmmrMk',
+  'kMkEEkmmLLmmmmMk',
+  'kMkkkkmmmmmmmmMk',
+  '.kMMMMMMMMMMMMk.',
+  '..kk.kk..kk.kk..',
+];
+const BOT_ROTORS = ['.pppp......pppp.', '..pp........pp..'];
+
 // Raw sheets, exported so tools can validate row widths.
 export const SHEETS = {
   CLAWD: [...CLAWD_TOP, ...LEGS.idle], BYTE,
   HATER_STAND: [...HATER_TOP, ...HATER_LEGS.stand], HATER_WALK: [...HATER_TOP, ...HATER_LEGS.walk], HATER_ARM,
   PROTESTER_A: [...PROTESTER_TOP, ...PROTESTER_LEGS[0]], PROTESTER_B: [...PROTESTER_TOP, ...PROTESTER_LEGS[1]], BLOB,
+  HYPE: [...HYPE_TOP, ...PROTESTER_LEGS[0]], REPLY: [...REPLY_TOP, ...PROTESTER_LEGS[0]], TYPER,
+  BOT_A: [BOT_ROTORS[0], ...BOT_BODY], BOT_B: [BOT_ROTORS[1], ...BOT_BODY],
 };
 
 function bake(rows, { flip = false, flipY = false, pal = PAL } = {}) {
@@ -180,6 +270,10 @@ export function makeSprites() {
       arm: bake(HATER_ARM, { pal: HATER_PAL }),
     },
     protester: PROTESTER_OUTFITS.map(o => PROTESTER_LEGS.map(legs => both([...PROTESTER_TOP, ...legs], { ...PROTESTER_PAL, ...o }))),
+    hype: PROTESTER_LEGS.map(legs => both([...HYPE_TOP, ...legs], HYPE_PAL)),
+    reply: PROTESTER_LEGS.map(legs => both([...REPLY_TOP, ...legs], REPLY_PAL)),
+    typer: both(TYPER, TYPER_PAL),
+    bot: BOT_ROTORS.map(r => both([r, ...BOT_BODY], BOT_PAL, true)),
   };
 }
 
