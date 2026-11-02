@@ -15,6 +15,12 @@ const TRACKS = {
     mel: ['E5 - G5 - C6 - B5 -', 'A5 - - - E5 - - -', 'F5 - A5 - C6 - A5 -', 'G5 - - - D5 - - -',
       'E5 - G5 - C6 - D6 -', 'E6 - C6 - A5 - - -', 'F5 - A5 - G5 - F5 -', 'E5 - D5 - C5 - - -'],
   },
+  ending: {
+    bpm: 120, chords: 'C G Am F', arp: true,
+    bass: 'x...o...x...o...', k: 'x.......x.......', s: '....x.......x...', h: 'x.x.x.x.x.x.x.x.',
+    mel: ['C5 E5 G5 - C6 - G5 E5', 'D5 G5 B5 - D6 - B5 G5', 'C5 E5 A5 - C6 - A5 E5', 'F5 A5 C6 - F6 - C6 A5',
+      'E6 - D6 C6 - G5 - E5', 'D6 - B5 G5 - D5 - -', 'C6 - B5 A5 - E5 A5 C6', 'C6 - - - C6 - . .'],
+  },
   'hello-world': {
     bpm: 140, chords: 'Am F C G', arp: true,
     bass: 'x.x.o.x.x.x.o.x.', k: 'x...x...x...x...', s: '....x.......x...', h: 'x.x.x.x.x.x.x.x.',

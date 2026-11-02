@@ -76,7 +76,7 @@ function show(name) {
   for (const [k, el] of Object.entries(screens)) el.hidden = k !== name;
   hud.hidden = !(name === 'play' || name === 'pause');
   syncTouchUI();
-  music.play(['play', 'pause', 'complete'].includes(name) && def ? def.id : 'title');
+  music.play(['play', 'pause', 'complete'].includes(name) && def ? def.id : name === 'ending' ? 'ending' : 'title');
   focusables = screens[name] ? [...screens[name].querySelectorAll('button:not([disabled])')] : [];
   focusIdx = Math.max(0, focusables.findIndex(b => b.dataset.default !== undefined));
   paintFocus();
@@ -178,14 +178,15 @@ $('#btn-mute').onclick = () => { save.muted = sfx.muted = !sfx.muted; persist();
 const updateMuteLabel = () => { $('#btn-mute').textContent = sfx.muted ? 'Sound: Off' : 'Sound: On'; };
 
 // Complete
-$('#btn-next').onclick = () => (levelIndex + 1 < LEVELS.length ? startLevel(levelIndex + 1) : showEnding());
+$('#btn-next').onclick = () => (levelIndex + 1 < LEVELS.length ? startLevel(levelIndex + 1) : playScene('outro', showEnding));
 $('#btn-retry').onclick = () => startLevel(levelIndex);
 $('#btn-levels').onclick = openSelect;
 $('#btn-end-levels').onclick = openSelect;
 
 function showEnding() {
   const total = LEVELS.reduce((s, d) => s + (save.best[d.id] ?? 0), 0);
-  $('#end-total').textContent = `Total best: ${fmt(total)}  ·  Deaths: ${save.deaths}`;
+  const all = LEVELS.every(d => save.best[d.id] != null);
+  $('#end-total').textContent = `${all ? `Total best: ${fmt(total)}  ·  ` : ''}Deaths: ${save.deaths}`;
   show('ending');
 }
 
@@ -324,7 +325,12 @@ function win() {
   $('#c-grade').classList.toggle('aplus', aplus);
   $('#c-deaths').textContent = `Deaths this level: ${run.deaths}`;
   $('#btn-next').textContent = levelIndex + 1 < LEVELS.length ? 'Next ▶' : 'Finish ▶';
-  setTimeout(() => { if (state === 'play' && run.won) show('complete'); }, 900);
+  const firstEnding = def.boss && !save.seenOutro;
+  setTimeout(() => {
+    if (state !== 'play' || !run.won) return;
+    if (firstEnding) playScene('outro', showEnding);
+    else show('complete');
+  }, firstEnding ? 1400 : 900);
 }
 
 // ---------------------------------------------------------------- rendering
@@ -457,16 +463,17 @@ function render(dt) {
   }
 
   // walkers
-  for (const b of lv.walkers) {
+  lv.walkers.forEach((b, i) => {
     if (b.kind === 'b') {
-      const wob = Math.sin(t * 8 + b.x * 0.1) * 0.08;
-      ctx.drawImage(SPR.blob[b.dir], b.x, b.y - wob * 10, 14, 10 * (1 + wob));
+      const wob = Math.sin(t * 8 + i * 1.7) * 0.08;
+      ctx.drawImage(SPR.blob[b.dir], b.x - 1, b.y - 2 - wob * 12, 16, 12 * (1 + wob));
     } else {
-      const bob = Math.floor(t * 6 + b.x) % 2;
-      ctx.drawImage(SPR.protester[b.dir], b.x, b.y - bob, 10, 16);
-      drawSign(b.x + 5, b.y - 9 - bob, 'NO AI', 18);
+      const step = Math.floor(t * 6 + i) % 2;
+      const hx = b.dir > 0 ? b.x + 9.5 : b.x + 0.5;
+      drawSign(hx, b.y - 13 - step, ['NO AI', 'NO BOTS', 'STOP SLOP'][i % 3], undefined, 16);
+      ctx.drawImage(SPR.protester[i % 2][step][b.dir], Math.round(b.x - 1), Math.round(b.y - 1));
     }
-  }
+  });
 
   // saws
   for (const saw of lv.saws) drawSaw(saw.cx, saw.cy, saw.r, t);
@@ -544,45 +551,38 @@ function drawSaw(cx, cy, r, t) {
   ctx.restore();
 }
 
-function drawSign(cx, y, text, w) {
-  ctx.fillStyle = '#6b4a2b';
-  ctx.fillRect(cx - 0.5, y + 6, 1, 6);
-  ctx.fillStyle = '#f4efe2';
-  ctx.fillRect(cx - w / 2, y, w, 7);
-  ctx.fillStyle = '#c8423b';
+// A protest sign: outlined board with red lettering on a pole that runs down `pole` px to the hand.
+function drawSign(cx, y, text, w, pole = 6) {
   ctx.font = 'bold 5px ui-monospace, Menlo, monospace';
+  w ??= Math.ceil(ctx.measureText(text).width) + 6;
+  const x = Math.round(cx - w / 2), px = Math.round(cx - 0.5);
+  ctx.fillStyle = '#1b1420';
+  ctx.fillRect(px - 1, y + 7, 3, pole);
+  ctx.fillRect(x - 1, y - 1, w + 2, 9);
+  ctx.fillStyle = '#8a6239';
+  ctx.fillRect(px, y + 7, 1, pole);
+  ctx.fillStyle = '#f4efe2';
+  ctx.fillRect(x, y, w, 7);
+  ctx.fillStyle = '#d8cfbd';
+  ctx.fillRect(x, y + 6, w, 1);
+  ctx.fillStyle = '#c8423b';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, cx, y + 3.8);
+  ctx.fillText(text, cx, y + 3.6);
   ctx.textBaseline = 'alphabetic';
 }
 
 function drawHater(H, t) {
-  const x = H.x, y = H.y, f = H.face;
-  // legs
-  ctx.fillStyle = '#2b2b3a'; ctx.fillRect(x + 4, y + 20, 5, 8); ctx.fillRect(x + 11, y + 20, 5, 8);
-  // coat
-  ctx.fillStyle = '#4d5b3a'; ctx.fillRect(x + 2, y + 9, 16, 13);
-  ctx.fillStyle = '#3a4529'; ctx.fillRect(x + 9, y + 9, 2, 13);
-  // head + beard
-  ctx.fillStyle = COLORS.s; ctx.fillRect(x + 5, y, 10, 9);
-  ctx.fillStyle = '#7a4a2a'; ctx.fillRect(x + 5, y + 5, 10, 5); ctx.fillRect(x + 4, y, 12, 2);
-  // angry eyes
-  ctx.fillStyle = '#141414';
-  const ex = f > 0 ? 1 : 0;
-  ctx.fillRect(x + 7 + ex, y + 3, 2, 2); ctx.fillRect(x + 11 + ex, y + 3, 2, 2);
-  ctx.fillRect(x + 6 + ex, y + 2, 3, 1); ctx.fillRect(x + 11 + ex, y + 2, 3, 1);
-  // arm + sign (raised while throwing)
-  const raise = H.anim > 0 ? -8 : Math.sin(t * 5) * 1.5;
-  const ax = f > 0 ? x + 18 : x - 2;
-  ctx.fillStyle = '#4d5b3a'; ctx.fillRect(ax, y + 8 + raise, 4, 8);
-  drawSign(ax + 2, y - 10 + raise, 'NO AI!', 26);
-  // speech
+  const f = H.face;
+  const legs = H.walk && Math.floor(t * 8) % 2 ? 'walk' : 'stand';
+  ctx.drawImage(SPR.hater[legs][f], Math.round(H.x), Math.round(H.y));
+  // sign arm on the side he faces: held at the shoulder, thrown up while throwing
+  const ax = Math.round(f > 0 ? H.x + 15 : H.x);
+  const handY = Math.round(H.y + (H.anim > 0 ? 1 : 8 + Math.sin(t * 5)));
+  drawSign(ax + 2.5, handY - 18, H.sign || 'NO AI!', H.signW, 12);
+  ctx.drawImage(SPR.hater.arm, ax, handY);
   if (!H.quiet && Math.floor(t * 0.8) % 3 === 0) {
-    ctx.font = 'bold 6px ui-monospace, Menlo, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#fff';
-    ctx.fillText(['SLOP!', 'GO AWAY BOT!', 'CLANKER!'][Math.floor(t * 0.8 / 3) % 3], x + 10, y - 24);
+    bubble(['SLOP!', 'GO AWAY, BOT!', 'CLANKER!'][Math.floor(t * 0.8 / 3) % 3], H.x + 10, H.y - 22);
   }
 }
 
@@ -638,31 +638,42 @@ function drawPlayer(dt) {
 
 // ---------------------------------------------------------------- intro scene
 
-const INTRO = [
-  { dur: 4.5, text: 'Claude Boy and Byte were happily shipping code together…' },
-  { dur: 5.0, text: 'Then The Hater stormed in. He hates AI. He hates slop. He hates… pretty much everything.' },
-  { dur: 4.0, text: '“NO AI!” He snatched Byte and ran off into the slop!' },
-  { dur: 4.0, text: 'Hang on, Byte! I’m coming!' },
-];
-let intro = null;
+// Story scenes share one player: the intro before level 1 and the happy ending after the boss.
+const SCENES = {
+  intro: [
+    { dur: 4.5, text: 'Claude Boy and Byte were happily shipping code together…' },
+    { dur: 5.0, text: 'Then The Hater stormed in. He hates AI. He hates slop. He hates… pretty much everything.' },
+    { dur: 4.0, text: '“NO AI!” He snatched Byte and ran off into the slop!' },
+    { dur: 4.0, text: 'Hang on, Byte! I’m coming!' },
+  ],
+  outro: [
+    { dur: 4.5, text: 'Claude Boy smashed the cage wide open. Byte was free!' },
+    { dur: 6.0, text: 'Byte offered The Hater a quick demo. He grumbled… then quietly fixed his sign.' },
+    { dur: 6.5, text: 'Back home, Claude Boy and Byte shipped the next release together. The end!' },
+  ],
+};
+const SEEN_KEY = { intro: 'seenIntro', outro: 'seenOutro' };
+let intro = null; // the scene being played
 
-function playIntro(onDone) {
-  intro = { panel: 0, t: 0, onDone, shown: '' };
+function playScene(scene, onDone) {
+  intro = { scene, panel: 0, t: 0, onDone, shown: '' };
   show('intro');
+  if (scene === 'outro') music.play('ending');
 }
+const playIntro = onDone => playScene('intro', onDone);
 function nextIntroPanel() {
   if (!intro) return;
   intro.panel++;
   intro.t = 0;
-  if (intro.panel >= INTRO.length) endIntro();
+  if (intro.panel >= SCENES[intro.scene].length) endIntro();
 }
 function endIntro() {
   if (!intro) return;
-  const done = intro.onDone;
+  const { onDone, scene } = intro;
   intro = null;
-  save.seenIntro = true;
+  save[SEEN_KEY[scene]] = true;
   persist();
-  done();
+  onDone();
 }
 $('#btn-skip').onclick = endIntro;
 screens.intro.addEventListener('pointerdown', e => { if (e.target.id !== 'btn-skip') nextIntroPanel(); });
@@ -696,20 +707,24 @@ function bubble(text, cx, y) {
 function renderIntro(dt) {
   if (!intro) return;
   intro.t += dt;
-  const p = INTRO[intro.panel];
+  const panels = SCENES[intro.scene];
+  const p = panels[intro.panel];
   if (intro.t > p.dur) { nextIntroPanel(); if (!intro) return; }
   const t = intro.t, now = performance.now() / 1000;
 
   // caption with typewriter effect
-  const target = INTRO[intro.panel].text;
+  const target = panels[intro.panel].text;
   const shown = target.slice(0, Math.floor(t * 45));
   if (shown !== intro.shown) { intro.shown = shown; $('#intro-text').textContent = shown; }
 
   resize();
   ctx.imageSmoothingEnabled = false;
   const W = canvas.width, H = canvas.height;
+  // the intro and the outro's last panel happen at home; the rest of the outro at the boss's lair
+  const home = intro.scene === 'intro' || intro.panel === 2;
+  const th = THEMES[home ? 0 : 5];
   const sky = ctx.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, THEMES[0].sky[0]); sky.addColorStop(1, THEMES[0].sky[1]);
+  sky.addColorStop(0, th.sky[0]); sky.addColorStop(1, th.sky[1]);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
@@ -717,10 +732,14 @@ function renderIntro(dt) {
   const s = Math.max(1, Math.floor(Math.min(H / 190, W / 330)));
   ctx.setTransform(s, 0, 0, s, Math.round((W - 320 * s) / 2), Math.round((H - 180 * s) / 2 - 20 * s));
   const G = 130; // ground line
-  ctx.fillStyle = THEMES[0].solid; ctx.fillRect(-800, G, 1920, 400);
-  ctx.fillStyle = THEMES[0].top; ctx.fillRect(-800, G, 1920, 3);
+  ctx.fillStyle = th.solid; ctx.fillRect(-800, G, 1920, 400);
+  ctx.fillStyle = th.top; ctx.fillRect(-800, G, 1920, 3);
+  if (home) drawDesk(G, now);
+  if (intro.scene === 'intro') drawIntroPanel(intro.panel, t, now, G);
+  else drawOutroPanel(intro.panel, t, now, G);
+}
 
-  // desk + terminal
+function drawDesk(G, now) {
   ctx.fillStyle = '#2a2140'; ctx.fillRect(30, G - 14, 64, 14);
   ctx.fillStyle = '#0d0a16'; ctx.fillRect(38, G - 52, 48, 34);
   ctx.fillStyle = '#4a3b63'; ctx.fillRect(36, G - 54, 52, 2); ctx.fillRect(58, G - 18, 8, 4);
@@ -730,26 +749,36 @@ function renderIntro(dt) {
     ctx.fillRect(41, G - 49 + i * 5, w, 2);
   }
   if (Math.floor(now * 2) % 2) { ctx.fillStyle = '#fff'; ctx.fillRect(41, G - 21, 3, 2); }
+}
 
-  const panel = intro.panel;
-  const ease = k => 1 - (1 - Math.min(1, Math.max(0, k))) ** 2;
+const ease = k => 1 - (1 - Math.min(1, Math.max(0, k))) ** 2;
 
+function drawHearts(cx, G, now) {
+  ctx.fillStyle = COLORS.P;
+  for (let i = 0; i < 3; i++) {
+    const hy = G - 24 - ((now * 12 + i * 9) % 26), hx = cx + Math.sin(now * 3 + i) * 6;
+    ctx.fillRect(hx, hy, 2, 2); ctx.fillRect(hx + 3, hy, 2, 2); ctx.fillRect(hx + 1, hy + 1, 3, 2); ctx.fillRect(hx + 2, hy + 3, 1, 1);
+  }
+}
+
+// Claude Boy and Byte bouncing side by side (happy)
+function drawHappyPair(x, G, now) {
+  const b1 = Math.abs(Math.sin(now * 6)) * 6, b2 = Math.abs(Math.sin(now * 6 + 1.2)) * 5;
+  drawClawd(x, G, 1, b1 > 1 ? 'air' : 'idle', b1);
+  ctx.drawImage(SPR.byte, x + 30, G - 8 - Math.round(b2), 10, 8);
+  drawHearts(x + 16, G, now);
+}
+
+function drawIntroPanel(panel, t, now, G) {
   if (panel === 0) {
-    const b1 = Math.abs(Math.sin(now * 6)) * 6, b2 = Math.abs(Math.sin(now * 6 + 1.2)) * 5;
-    drawClawd(120, G, 1, b1 > 1 ? 'air' : 'idle', b1);
-    ctx.drawImage(SPR.byte, 150, G - 8 - Math.round(b2), 10, 8);
-    ctx.fillStyle = COLORS.P;
-    for (let i = 0; i < 3; i++) {
-      const hy = G - 24 - ((now * 12 + i * 9) % 26), hx = 136 + Math.sin(now * 3 + i) * 6;
-      ctx.fillRect(hx, hy, 2, 2); ctx.fillRect(hx + 3, hy, 2, 2); ctx.fillRect(hx + 1, hy + 1, 3, 2); ctx.fillRect(hx + 2, hy + 3, 1, 1);
-    }
+    drawHappyPair(120, G, now);
   } else if (panel === 1) {
     const hx = 340 - ease(t / 1.6) * 150;
     const startled = t > 1.0;
     drawClawd(startled ? 112 : 120, G, 1, 'idle', startled && t < 1.3 ? 6 : 0);
     ctx.drawImage(SPR.byte, startled ? 146 : 150, G - 8 - (startled && t < 1.3 ? 5 : 0), 10, 8);
     if (startled) { bubble('!', 119, G - 18); bubble('!', 151, G - 14); }
-    drawHater({ x: hx, y: G - 28, w: 20, h: 28, face: -1, anim: t > 2.2 && t < 2.6 ? 0.2 : 0, quiet: true }, now);
+    drawHater({ x: hx, y: G - 28, w: 20, h: 28, face: -1, anim: t > 2.2 && t < 2.6 ? 0.2 : 0, quiet: true, walk: t < 1.6 }, now);
     if (t > 2.4) bubble('ARTIFICIAL SLOP!', hx + 10, G - 46);
   } else if (panel === 2) {
     const grab = Math.min(1, t / 0.6);
@@ -760,7 +789,7 @@ function renderIntro(dt) {
     if (t > 0.6) bubble('BYTE!', 119, G - 18);
     ctx.drawImage(SPR.byte, cageX + 1, cageY + 4, 10, 8);
     drawCage(cageX, cageY);
-    drawHater({ x: hx, y: G - 28, w: 20, h: 28, face: t > 0.9 ? 1 : -1, anim: 0, quiet: true }, now);
+    drawHater({ x: hx, y: G - 28, w: 20, h: 28, face: t > 0.9 ? 1 : -1, anim: 0, quiet: true, walk: t > 0.9 }, now);
     if (t > 0.9 && t < 2.2) bubble('NO AI!', hx + 10, G - 46);
     // slop seeping in from the right
     for (let i = 0; i < 6; i++) drawSlop(256 + i * T, G - T, i, now);
@@ -775,6 +804,77 @@ function renderIntro(dt) {
     drawClawd(x, G, 1, dash ? (Math.floor(now * 12) % 2 ? 'run' : 'idle') : 'idle', -squat, true);
     if (!dash) bubble('GRR!', 119, G - 18);
     for (let i = 0; i < 6; i++) drawSlop(256 + i * T, G - T, i, now);
+  }
+}
+
+function drawBrokenCage(x, G) {
+  ctx.fillStyle = '#c0c4cc';
+  ctx.fillRect(x, G - 1, 16, 1);
+  ctx.fillRect(x + 20, G - 1, 9, 1);
+  ctx.fillRect(x - 9, G - 2, 1, 2);
+  ctx.fillRect(x + 33, G - 1, 6, 1);
+  ctx.fillRect(x + 4, G - 6, 1, 5);
+}
+
+function drawConfetti(now) {
+  const colors = [COLORS.O, COLORS.B, COLORS.P, '#7ed957', '#ffd166'];
+  for (let i = 0; i < 40; i++) {
+    const h = hash(i, 7);
+    const x = (h % 340) - 10 + Math.sin(now * 2 + i) * 6;
+    const y = ((now * (30 + (h >> 8) % 30) + (h >> 4) % 200) % 200) - 40;
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillRect(x, y, 2, 2);
+  }
+}
+
+function drawOutroPanel(panel, t, now, G) {
+  // The Hater, calmer now; his sign gets an edit in panel 1
+  const hater = (x, sign) => drawHater({ x, y: G - 28, w: 20, h: 28, face: -1, anim: 0, quiet: true, sign }, now);
+  if (panel === 0) {
+    for (let i = 0; i < 4; i++) drawSlop(-16 + i * T, G - T, i, now);
+    drawBrokenCage(146, G);
+    if (t < 0.7) {
+      // Claude Boy leaps in and smashes the cage
+      const k = t / 0.7;
+      drawClawd(70 + k * 60, G, 1, 'air', Math.sin(k * Math.PI) * 30);
+      ctx.drawImage(SPR.byte, 151, G - 12, 10, 8);
+      drawCage(150, G - 16);
+    } else {
+      drawHappyPair(122, G, now);
+      if (t < 1.4) {
+        ctx.fillStyle = '#ffffff';
+        const r = (t - 0.7) * 40;
+        for (let i = 0; i < 8; i++) ctx.fillRect(156 + Math.cos(i) * r, G - 10 + Math.sin(i) * r * 0.6, 2, 2);
+      }
+      if (t > 1.2 && t < 3) bubble('BYTE!', 129, G - 20);
+      if (t > 2.6) bubble('THANK YOU!', 157, G - 16);
+    }
+    hater(250, 'NO AI!');
+  } else if (panel === 1) {
+    drawClawd(110, G, 1, 'idle');
+    const bx = 140 + ease((t - 0.8) / 1.2) * 38;
+    ctx.drawImage(SPR.byte, bx, G - 8 - Math.round(Math.abs(Math.sin(now * 8)) * (t > 0.8 && t < 2 ? 4 : 0)), 10, 8);
+    if (t > 1.8 && t < 3.6) bubble('WANT A DEMO?', bx + 5, G - 16);
+    const fixed = t > 3.6;
+    hater(225, fixed ? 'AI? …OK' : 'NO AI!');
+    if (t > 2.6 && t < 3.6) bubble('HMPH…', 235, G - 46);
+    if (fixed) bubble('FINE. ONE DEMO.', 240, G - 48);
+    if (fixed) drawHearts(bx + 2, G, now);
+  } else {
+    drawConfetti(now);
+    drawHappyPair(104, G, now);
+    hater(250, 'AI? …OK');
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 22px ui-monospace, Menlo, monospace';
+    ctx.fillStyle = '#000000';
+    ctx.fillText('THE END', 161, 43);
+    ctx.fillStyle = COLORS.O;
+    ctx.fillText('THE END', 160, 42);
+    if (t > 1.5) {
+      ctx.font = 'bold 8px ui-monospace, Menlo, monospace';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('Thanks for playing!', 160, 56);
+    }
   }
 }
 
