@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Super Claude Boy</title>
+  <meta name="description" content="A tough-as-nails speedrun platformer starring Claude Boy.">
+  <meta name="theme-color" content="#140f24">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Claude Boy">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" hidden>
+    <div class="hud-left"><span id="hud-level"></span></div>
+    <div class="hud-center"><span id="hud-time">0.00</span><span id="hud-best"></span></div>
+    <div class="hud-right">
+      <span id="hud-deaths">💀 0</span>
+      <button id="btn-restart" class="icon" aria-label="Restart">↻</button>
+      <button id="btn-pause" class="icon" aria-label="Pause">❚❚</button>
+    </div>
+  </div>
+
+  <div id="touch" hidden>
+    <div class="tbtn" id="t-left">◀</div>
+    <div class="tbtn" id="t-right">▶</div>
+    <div class="tbtn jump" id="t-jump">JUMP</div>
+  </div>
+
+  <section id="title" class="screen">
+    <canvas id="title-hero" width="140" height="120"></canvas>
+    <h1>SUPER<br>CLAUDE BOY</h1>
+    <p class="story">The Hater kidnapped Byte!<br>Run through the AI slop and bring them home.</p>
+    <button id="btn-play" data-default>Play ▶</button>
+    <p class="controls">Touch: ◀ ▶ on the left, JUMP on the right<br>Keys: ←→ / A D · Space to jump · R restart · Esc pause<br>Gamepad: stick/D-pad · A jump · Y restart · Start pause</p>
+  </section>
+
+  <section id="select" class="screen" data-cols="3" hidden>
+    <h2>Choose a level</h2>
+    <div id="level-grid"></div>
+    <p id="total"></p>
+    <button id="btn-back" class="secondary">◀ Back</button>
+  </section>
+
+  <section id="complete" class="screen" hidden>
+    <h2 id="c-title"></h2>
+    <p id="c-level" class="sub"></p>
+    <p id="c-time" class="bigtime"></p>
+    <p id="c-best"></p>
+    <p id="c-grade"></p>
+    <p id="c-deaths" class="sub"></p>
+    <div class="row">
+      <button id="btn-retry" class="secondary">↻ Retry</button>
+      <button id="btn-next" data-default>Next ▶</button>
+      <button id="btn-levels" class="secondary">Levels</button>
+    </div>
+  </section>
+
+  <section id="pause" class="screen" hidden>
+    <h2>Paused</h2>
+    <div class="col">
+      <button id="btn-resume" data-default>Resume</button>
+      <button id="btn-p-restart" class="secondary">Restart level</button>
+      <button id="btn-p-levels" class="secondary">Levels</button>
+      <button id="btn-mute" class="secondary">Sound: On</button>
+    </div>
+  </section>
+
+  <section id="ending" class="screen" hidden>
+    <h2>Byte is safe!</h2>
+    <p class="story">The Hater drops his sign and storms off, muttering about “slop”.<br>Claude Boy and Byte head home to ship some code.</p>
+    <p id="end-total" class="bigtime small"></p>
+    <p class="sub">Now go back and beat those times.</p>
+    <button id="btn-end-levels" data-default>Levels</button>
+  </section>
+
+  <div id="rotate">↻ Rotate to landscape</div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

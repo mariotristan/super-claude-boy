@@ -1,0 +1,9 @@
+{
+  "name": "super-claude-boy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "solve": "node tools/solve.mjs",
+    "serve": "python3 -m http.server 8080"
+  }
+}
