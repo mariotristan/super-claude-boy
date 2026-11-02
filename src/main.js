@@ -467,6 +467,8 @@ function render(dt) {
     if (b.kind === 'b') {
       const wob = Math.sin(t * 8 + i * 1.7) * 0.08;
       ctx.drawImage(SPR.blob[b.dir], b.x - 1, b.y - 2 - wob * 12, 16, 12 * (1 + wob));
+      const talk = (t + i * 2.3) % 6;
+      if (talk < 1.8) bubble(BLOB_LINES[Math.floor((t + i * 2.3) / 6 + i) % BLOB_LINES.length], b.x + 7, b.y - 6);
     } else {
       const step = Math.floor(t * 6 + i) % 2;
       const hx = b.dir > 0 ? b.x + 9.5 : b.x + 0.5;
@@ -474,6 +476,8 @@ function render(dt) {
       ctx.drawImage(SPR.protester[i % 2][step][b.dir], Math.round(b.x - 1), Math.round(b.y - 1));
     }
   });
+
+  drawSlopLife(t);
 
   // saws
   for (const saw of lv.saws) drawSaw(saw.cx, saw.cy, saw.r, t);
@@ -514,6 +518,86 @@ function render(dt) {
   }
 }
 
+// ---------------------------------------------------------------- AI slop flavor (visual only)
+
+const SLOP_WORDS = ['delve', 'tapestry', '✨synergy✨', 'As an AI…', 'In conclusion', 'game-changer', 'seamless',
+  'leverage', 'robust', 'lorem ipsum', 'unlock value', '10x', 'it’s not X, it’s Y', '🚀🚀🚀', 'Certainly!', 'rich tapestry'];
+const BLOB_LINES = ['Great question!', 'Let’s delve!', 'As an AI…', '✨Synergy✨', 'In conclusion…', 'Certainly!'];
+
+// Contiguous runs of slop tiles in each row, cached per level.
+const slopRunCache = new Map();
+function slopRuns(level) {
+  if (slopRunCache.has(level.def)) return slopRunCache.get(level.def);
+  const runs = [];
+  for (let ty = 0; ty < level.h; ty++) {
+    for (let tx = 0; tx < level.w; tx++) {
+      if (tileAt(level, tx, ty) !== '^' || tileAt(level, tx - 1, ty) === '^') continue;
+      let end = tx;
+      while (tileAt(level, end + 1, ty) === '^') end++;
+      runs.push({ x0: tx, x1: end, ty, id: runs.length });
+    }
+  }
+  slopRunCache.set(level.def, runs);
+  return runs;
+}
+
+function drawSlopLife(t) {
+  const runs = slopRuns(lv);
+  // warning sign at the edge of the first pool
+  const first = runs[0];
+  if (first) {
+    const sx = first.x0 - 1;
+    const ground = isSolid(lv, sx, first.ty) ? first.ty * T : (first.ty + 1) * T;
+    if (!isSolid(lv, sx, Math.floor((ground - 1) / T))) drawSign(sx * T + 8, ground - 22, '⚠ AI SLOP', undefined, 15, true);
+  }
+  ctx.textAlign = 'center';
+  for (const r of runs) {
+    const width = (r.x1 - r.x0 + 1) * T, surface = r.ty * T + 8;
+    // slop phrases bubbling up (one stream per 3 tiles)
+    const streams = Math.max(1, Math.round(width / (T * 3)));
+    for (let j = 0; j < streams; j++) {
+      const period = 2.6, cycle = (t + r.id * 0.9 + j * 1.7) / period, n = Math.floor(cycle), age = cycle - n;
+      const h = hash(n * 7 + j, r.id + 3);
+      const word = SLOP_WORDS[h % SLOP_WORDS.length];
+      const x = r.x0 * T + 8 + (h >> 5) % Math.max(1, width - 16);
+      ctx.globalAlpha = Math.min(1, (1 - age) * 2) * 0.9;
+      ctx.font = 'bold 5px ui-monospace, Menlo, monospace';
+      ctx.fillStyle = '#1b1420';
+      ctx.fillText(word, x + 0.5, surface - 2 - age * 22 + 0.5);
+      ctx.fillStyle = '#f0b8ff';
+      ctx.fillText(word, x, surface - 2 - age * 22);
+    }
+    ctx.globalAlpha = 1;
+    // the six-fingered hand, the unmistakable mark of generated art
+    const hc = (t + r.id * 1.3) / 4.5, hn = Math.floor(hc), ha = (hc - hn) * 4.5;
+    if (ha < 1.4) {
+      const hx = r.x0 * T + 2 + hash(hn, r.id + 11) % Math.max(1, width - 14);
+      const rise = Math.min(1, ha / 0.3, (1.4 - ha) / 0.3) * 18;
+      drawSixFingers(Math.round(hx), Math.round(surface + 4 - rise), t);
+    }
+  }
+}
+
+const HAND_FRAMES = [
+  ['.....p.p.....', '...p.p.p.p...', '...p.p.p.p.p.', '.p.p.p.p.p.p.', '.p.p.p.p.p.p.',
+    '.ppppppppppp.', '.ppppppppppp.', '..ppppppppp..', '..PPPPPPPPP..', '...pppppppP..', '...pppppppP..', '...pppppppP..', '...pppppppP..'],
+  ['...p.....p...', '...p.p.p.p...', '.p.p.p.p.p.p.', '.p.p.p.p.p.p.', '.p.p.p.p.p.p.',
+    '.ppppppppppp.', '.ppppppppppp.', '..ppppppppp..', '..PPPPPPPPP..', '...pppppppP..', '...pppppppP..', '...pppppppP..', '...pppppppP..'],
+];
+const HAND_COLORS = { p: '#f2b6e2', P: '#c77fb3' };
+
+// A wiggling six-fingered hand (count them).
+function drawSixFingers(x, y, t) {
+  const rows = HAND_FRAMES[Math.floor(t * 4) % 2];
+  for (let r = 0; r < rows.length; r++)
+    for (let c = 0; c < rows[r].length; c++) {
+      const ch = rows[r][c];
+      if (ch === '.') continue;
+      ctx.fillStyle = HAND_COLORS[ch];
+      ctx.fillRect(x + c, y + r, 1, 1);
+    }
+}
+
 function drawSlop(x, y, tx, t) {
   ctx.fillStyle = '#7a2f8f';
   ctx.fillRect(x, y + 8, T, 8);
@@ -552,7 +636,7 @@ function drawSaw(cx, cy, r, t) {
 }
 
 // A protest sign: outlined board with red lettering on a pole that runs down `pole` px to the hand.
-function drawSign(cx, y, text, w, pole = 6) {
+function drawSign(cx, y, text, w, pole = 6, warn = false) {
   ctx.font = 'bold 5px ui-monospace, Menlo, monospace';
   w ??= Math.ceil(ctx.measureText(text).width) + 6;
   const x = Math.round(cx - w / 2), px = Math.round(cx - 0.5);
@@ -561,11 +645,11 @@ function drawSign(cx, y, text, w, pole = 6) {
   ctx.fillRect(x - 1, y - 1, w + 2, 9);
   ctx.fillStyle = '#8a6239';
   ctx.fillRect(px, y + 7, 1, pole);
-  ctx.fillStyle = '#f4efe2';
+  ctx.fillStyle = warn ? '#ffd166' : '#f4efe2';
   ctx.fillRect(x, y, w, 7);
-  ctx.fillStyle = '#d8cfbd';
+  ctx.fillStyle = warn ? '#d9a93f' : '#d8cfbd';
   ctx.fillRect(x, y + 6, w, 1);
-  ctx.fillStyle = '#c8423b';
+  ctx.fillStyle = warn ? '#1b1420' : '#c8423b';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, cx, y + 3.6);

@@ -11,6 +11,7 @@ The Hater has kidnapped Byte. Run, wall-jump, and dodge AI slop, saws, and angry
 |---|---|
 | ![The Slop Pit](docs/screenshots/slop-pit.png) | ![Hallucination Sawmill](docs/screenshots/sawmill.png) |
 | ![Boss level: The Hater](docs/screenshots/the-hater.png) | ![Intro scene](docs/screenshots/intro.png) |
+| ![Happy ending](docs/screenshots/outro.png) | |
 
 ![Level select](docs/screenshots/level-select.png)
 
@@ -21,7 +22,7 @@ Super Claude Boy is a fan-made love letter to two things:
 - **[Super Meat Boy](https://supermeatboy.com/)** (Team Meat, 2010). It inspired the brutal-but-fair level design, instant respawns, wall jumps, the trail the hero leaves on every surface, the kidnapped friend, and the obsession with shaving milliseconds off a run.
 - **The Claude Code mascot**, the little orange pixel creature in the terminal, recast as a platform hero. His friend Byte stands in for Bandage Girl.
 
-The villains poke fun at the AI conversation from both sides. **AI slop** shows up as the hazards: oozing purple goo, glitchy "hallucinated" saws, and blobs with too many eyes. **The Hater** and his sign-waving protesters stand in for the people who want no AI anywhere, ever. It's all in good fun.
+The villains poke fun at the AI conversation from both sides. **AI slop** shows up as the hazards: oozing purple goo that bubbles up slop phrases ("delve", "tapestry", "✨synergy✨", "As an AI…") and the occasional six-fingered hand, glitchy "hallucinated" saws, and blobs with too many eyes that say "Great question!". **The Hater** and his sign-waving protesters stand in for the people who want no AI anywhere, ever. Beat him and the ending has a twist: he gets a demo and quietly updates his sign. It's all in good fun.
 
 The game was built with [Claude Code](https://claude.com/claude-code) as a small experiment in making a complete, polished, installable game with no engine and no build step.
 
