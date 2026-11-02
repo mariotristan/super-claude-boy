@@ -1,8 +1,8 @@
 // Offline support: serve from cache, refresh the cache in the background.
-const CACHE = 'super-claude-boy-v2';
+const CACHE = 'super-claude-boy-v3';
 const ASSETS = [
   './', './index.html', './style.css', './manifest.webmanifest',
-  './src/main.js', './src/physics.js', './src/levels.js', './src/sprites.js', './src/audio.js', './src/input.js',
+  './src/main.js', './src/physics.js', './src/levels.js', './src/sprites.js', './src/audio.js', './src/input.js', './src/music.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png',
 ];
 

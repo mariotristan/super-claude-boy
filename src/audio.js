@@ -1,6 +1,11 @@
 // Tiny Web Audio synth. Must be unlocked from a user gesture on iOS.
 
-let ac = null, master = null, noiseBuf = null;
+let ac = null, master = null, sfxBus = null, musicBus = null, noiseBuf = null;
+const unlockHooks = [];
+
+// Shared audio graph for the music sequencer (null until unlocked).
+export const audioGraph = () => (ac ? { ac, musicBus, noiseBuf } : null);
+export const onAudioUnlock = fn => unlockHooks.push(fn);
 
 function tone(type, f0, f1, dur, vol = 0.3, delay = 0) {
   const t = ac.currentTime + delay;
@@ -10,7 +15,7 @@ function tone(type, f0, f1, dur, vol = 0.3, delay = 0) {
   o.frequency.exponentialRampToValueAtTime(f1, t + dur);
   g.gain.setValueAtTime(vol, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  o.connect(g).connect(master);
+  o.connect(g).connect(sfxBus);
   o.start(t); o.stop(t + dur + 0.02);
 }
 
@@ -21,7 +26,7 @@ function noise(dur, vol, freq) {
   f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8;
   g.gain.setValueAtTime(vol, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  src.connect(f).connect(g).connect(master);
+  src.connect(f).connect(g).connect(sfxBus);
   src.start(t); src.stop(t + dur);
 }
 
@@ -46,10 +51,16 @@ export const sfx = {
         master = ac.createGain();
         master.gain.value = 0.6;
         master.connect(ac.destination);
+        sfxBus = ac.createGain();
+        sfxBus.connect(master);
+        musicBus = ac.createGain();
+        musicBus.gain.value = 0.55;
+        musicBus.connect(master);
         noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.5, ac.sampleRate);
         const d = noiseBuf.getChannelData(0);
         for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
       } catch { return; }
+      unlockHooks.forEach(fn => fn());
     }
     if (ac.state === 'suspended') ac.resume();
   },

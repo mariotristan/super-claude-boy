@@ -38,9 +38,19 @@
     <canvas id="title-hero" width="140" height="120"></canvas>
     <h1>SUPER<br>CLAUDE BOY</h1>
     <p class="story">The Hater kidnapped Byte!<br>Run through the AI slop and bring them home.</p>
-    <button id="btn-play" data-default>Play ▶</button>
+    <div class="row">
+      <button id="btn-play" data-default>Play ▶</button>
+      <button id="btn-intro" class="secondary">Watch intro</button>
+      <button id="btn-music" class="secondary">♪ Music: On</button>
+    </div>
     <p id="pad-hint">🎮 Using a controller? Press any button on it to connect.</p>
     <p class="controls">Touch: ◀ ▶ on the left, JUMP on the right<br>Keys: ←→ / A D · Space to jump · R restart · Esc pause<br>Gamepad: stick/D-pad · A jump · Y restart · Start pause</p>
+  </section>
+
+  <section id="intro" class="screen" hidden>
+    <button id="btn-skip" class="secondary">Skip ▶▶</button>
+    <p id="intro-text"></p>
+    <p class="sub intro-hint">Tap or press A to continue</p>
   </section>
 
   <section id="select" class="screen" data-cols="3" hidden>
@@ -71,6 +81,7 @@
       <button id="btn-p-restart" class="secondary">Restart level</button>
       <button id="btn-p-levels" class="secondary">Levels</button>
       <button id="btn-mute" class="secondary">Sound: On</button>
+      <button id="btn-p-music" class="secondary">♪ Music: On</button>
     </div>
   </section>
 

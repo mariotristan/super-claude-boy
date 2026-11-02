@@ -1,7 +1,8 @@
 import { T, DT, parseLevel, newPlayer, stepPlayer, updateWorld, checkDeath, touchesGoal, tileAt, isSolid } from './physics.js';
 import { LEVELS } from './levels.js';
 import { makeSprites, COLORS } from './sprites.js';
-import { sfx } from './audio.js';
+import { sfx, audioGraph } from './audio.js';
+import { music } from './music.js';
 import { Input } from './input.js';
 
 const $ = s => document.querySelector(s);
@@ -28,11 +29,12 @@ const DEATH_LINES = {
 
 const SAVE_KEY = 'super-claude-boy-v1';
 const save = (() => {
-  const base = { best: {}, ghosts: {}, unlocked: 1, deaths: 0, muted: false };
+  const base = { best: {}, ghosts: {}, unlocked: 1, deaths: 0, muted: false, music: true, seenIntro: false };
   try { return { ...base, ...JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') }; } catch { return base; }
 })();
 const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch { /* storage full or private mode */ } };
 sfx.muted = save.muted;
+music.setEnabled(save.music);
 
 export const fmt = t => {
   if (t == null) return '--.--';
@@ -42,7 +44,7 @@ export const fmt = t => {
 
 // ---------------------------------------------------------------- screens & input
 
-const screens = { title: $('#title'), select: $('#select'), complete: $('#complete'), pause: $('#pause'), ending: $('#ending') };
+const screens = { title: $('#title'), intro: $('#intro'), select: $('#select'), complete: $('#complete'), pause: $('#pause'), ending: $('#ending') };
 const hud = $('#hud'), touchUI = $('#touch');
 let state = 'title';
 let focusables = [], focusIdx = 0;
@@ -74,6 +76,7 @@ function show(name) {
   for (const [k, el] of Object.entries(screens)) el.hidden = k !== name;
   hud.hidden = !(name === 'play' || name === 'pause');
   syncTouchUI();
+  music.play(['play', 'pause', 'complete'].includes(name) && def ? def.id : 'title');
   focusables = screens[name] ? [...screens[name].querySelectorAll('button:not([disabled])')] : [];
   focusIdx = Math.max(0, focusables.findIndex(b => b.dataset.default !== undefined));
   paintFocus();
@@ -95,7 +98,11 @@ input.onNav = action => {
     else if (action === 'restart') restart();
     return;
   }
-  if (state === 'title' && (action === 'confirm')) return openSelect();
+  if (state === 'intro') {
+    if (action === 'confirm') nextIntroPanel();
+    else if (action === 'back' || action === 'pause') endIntro();
+    return;
+  }
   if (action === 'restart' && (state === 'complete' || state === 'pause')) return startLevel(levelIndex);
   if (action === 'back' || action === 'pause') {
     if (state === 'pause') return resume();
@@ -120,8 +127,20 @@ document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('dblclick', e => e.preventDefault());
 
 // Title
-$('#btn-play').onclick = () => openSelect();
-screens.title.addEventListener('pointerdown', e => { if (e.target === screens.title) openSelect(); });
+$('#btn-play').onclick = () => (save.seenIntro ? openSelect() : playIntro(() => startLevel(0)));
+$('#btn-intro').onclick = () => playIntro(() => show('title'));
+$('#btn-music').onclick = toggleMusic;
+$('#btn-p-music').onclick = toggleMusic;
+function toggleMusic() {
+  save.music = !save.music;
+  persist();
+  music.setEnabled(save.music);
+  updateMusicLabels();
+}
+function updateMusicLabels() {
+  for (const id of ['#btn-music', '#btn-p-music']) $(id).textContent = `♪ Music: ${save.music ? 'On' : 'Off'}`;
+}
+updateMusicLabels();
 
 // Select
 function openSelect() {
@@ -559,7 +578,7 @@ function drawHater(H, t) {
   ctx.fillStyle = '#4d5b3a'; ctx.fillRect(ax, y + 8 + raise, 4, 8);
   drawSign(ax + 2, y - 10 + raise, 'NO AI!', 26);
   // speech
-  if (Math.floor(t * 0.8) % 3 === 0) {
+  if (!H.quiet && Math.floor(t * 0.8) % 3 === 0) {
     ctx.font = 'bold 6px ui-monospace, Menlo, monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#fff';
@@ -617,6 +636,148 @@ function drawPlayer(dt) {
   ctx.drawImage(spr, cx - w / 2, feet - h + idleBob, w, h);
 }
 
+// ---------------------------------------------------------------- intro scene
+
+const INTRO = [
+  { dur: 4.5, text: 'Claude Boy and Byte were happily shipping code together…' },
+  { dur: 5.0, text: 'Then The Hater stormed in. He hates AI. He hates slop. He hates… pretty much everything.' },
+  { dur: 4.0, text: '“NO AI!” He snatched Byte and ran off into the slop!' },
+  { dur: 4.0, text: 'Hang on, Byte! I’m coming!' },
+];
+let intro = null;
+
+function playIntro(onDone) {
+  intro = { panel: 0, t: 0, onDone, shown: '' };
+  show('intro');
+}
+function nextIntroPanel() {
+  if (!intro) return;
+  intro.panel++;
+  intro.t = 0;
+  if (intro.panel >= INTRO.length) endIntro();
+}
+function endIntro() {
+  if (!intro) return;
+  const done = intro.onDone;
+  intro = null;
+  save.seenIntro = true;
+  persist();
+  done();
+}
+$('#btn-skip').onclick = endIntro;
+screens.intro.addEventListener('pointerdown', e => { if (e.target.id !== 'btn-skip') nextIntroPanel(); });
+
+function drawCage(x, y) {
+  ctx.fillStyle = '#c0c4cc';
+  ctx.fillRect(x - 2, y - 2, 16, 1);
+  for (let i = 0; i < 5; i++) ctx.fillRect(x - 2 + i * 4 - (i === 4 ? 1 : 0), y - 2, 1, 16);
+}
+
+function drawClawd(x, feet, face, frame, bounce = 0, angry = false) {
+  ctx.drawImage(SPR.clawd[frame][face], Math.round(x), Math.round(feet - 12 - bounce), 14, 12);
+  if (angry) {
+    ctx.fillStyle = '#141414';
+    const ex = face > 0 ? 1 : -1;
+    ctx.fillRect(Math.round(x) + 4 + ex, Math.round(feet - 12 - bounce) + 1, 3, 1);
+    ctx.fillRect(Math.round(x) + 8 + ex, Math.round(feet - 12 - bounce) + 1, 3, 1);
+  }
+}
+
+function bubble(text, cx, y) {
+  ctx.font = 'bold 7px ui-monospace, Menlo, monospace';
+  ctx.textAlign = 'center';
+  const w = ctx.measureText(text).width + 8;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(Math.round(cx - w / 2), y - 9, Math.ceil(w), 11);
+  ctx.fillStyle = '#141414';
+  ctx.fillText(text, cx, y);
+}
+
+function renderIntro(dt) {
+  if (!intro) return;
+  intro.t += dt;
+  const p = INTRO[intro.panel];
+  if (intro.t > p.dur) { nextIntroPanel(); if (!intro) return; }
+  const t = intro.t, now = performance.now() / 1000;
+
+  // caption with typewriter effect
+  const target = INTRO[intro.panel].text;
+  const shown = target.slice(0, Math.floor(t * 45));
+  if (shown !== intro.shown) { intro.shown = shown; $('#intro-text').textContent = shown; }
+
+  resize();
+  ctx.imageSmoothingEnabled = false;
+  const W = canvas.width, H = canvas.height;
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, THEMES[0].sky[0]); sky.addColorStop(1, THEMES[0].sky[1]);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+
+  const s = Math.max(1, Math.floor(Math.min(H / 190, W / 330)));
+  ctx.setTransform(s, 0, 0, s, Math.round((W - 320 * s) / 2), Math.round((H - 180 * s) / 2 - 20 * s));
+  const G = 130; // ground line
+  ctx.fillStyle = THEMES[0].solid; ctx.fillRect(-800, G, 1920, 400);
+  ctx.fillStyle = THEMES[0].top; ctx.fillRect(-800, G, 1920, 3);
+
+  // desk + terminal
+  ctx.fillStyle = '#2a2140'; ctx.fillRect(30, G - 14, 64, 14);
+  ctx.fillStyle = '#0d0a16'; ctx.fillRect(38, G - 52, 48, 34);
+  ctx.fillStyle = '#4a3b63'; ctx.fillRect(36, G - 54, 52, 2); ctx.fillRect(58, G - 18, 8, 4);
+  for (let i = 0; i < 6; i++) {
+    const w = 8 + ((i * 37 + Math.floor(now * 2)) % 28);
+    ctx.fillStyle = i % 3 === 0 ? COLORS.O : '#7ed957';
+    ctx.fillRect(41, G - 49 + i * 5, w, 2);
+  }
+  if (Math.floor(now * 2) % 2) { ctx.fillStyle = '#fff'; ctx.fillRect(41, G - 21, 3, 2); }
+
+  const panel = intro.panel;
+  const ease = k => 1 - (1 - Math.min(1, Math.max(0, k))) ** 2;
+
+  if (panel === 0) {
+    const b1 = Math.abs(Math.sin(now * 6)) * 6, b2 = Math.abs(Math.sin(now * 6 + 1.2)) * 5;
+    drawClawd(120, G, 1, b1 > 1 ? 'air' : 'idle', b1);
+    ctx.drawImage(SPR.byte, 150, G - 8 - Math.round(b2), 10, 8);
+    ctx.fillStyle = COLORS.P;
+    for (let i = 0; i < 3; i++) {
+      const hy = G - 24 - ((now * 12 + i * 9) % 26), hx = 136 + Math.sin(now * 3 + i) * 6;
+      ctx.fillRect(hx, hy, 2, 2); ctx.fillRect(hx + 3, hy, 2, 2); ctx.fillRect(hx + 1, hy + 1, 3, 2); ctx.fillRect(hx + 2, hy + 3, 1, 1);
+    }
+  } else if (panel === 1) {
+    const hx = 340 - ease(t / 1.6) * 150;
+    const startled = t > 1.0;
+    drawClawd(startled ? 112 : 120, G, 1, 'idle', startled && t < 1.3 ? 6 : 0);
+    ctx.drawImage(SPR.byte, startled ? 146 : 150, G - 8 - (startled && t < 1.3 ? 5 : 0), 10, 8);
+    if (startled) { bubble('!', 119, G - 18); bubble('!', 151, G - 14); }
+    drawHater({ x: hx, y: G - 28, w: 20, h: 28, face: -1, anim: t > 2.2 && t < 2.6 ? 0.2 : 0, quiet: true }, now);
+    if (t > 2.4) bubble('ARTIFICIAL SLOP!', hx + 10, G - 46);
+  } else if (panel === 2) {
+    const grab = Math.min(1, t / 0.6);
+    let hx = 190 - grab * 22;
+    let cageX = 150, cageY = G - 12 - (1 - grab) * 50;
+    if (t > 0.9) { hx = 168 + (t - 0.9) ** 2 * 140; cageX = hx + 20; cageY = G - 22; }
+    drawClawd(112, G, 1, 'idle', Math.abs(Math.sin(now * 20)) * (t > 0.6 ? 2 : 0));
+    if (t > 0.6) bubble('BYTE!', 119, G - 18);
+    ctx.drawImage(SPR.byte, cageX + 1, cageY + 4, 10, 8);
+    drawCage(cageX, cageY);
+    drawHater({ x: hx, y: G - 28, w: 20, h: 28, face: t > 0.9 ? 1 : -1, anim: 0, quiet: true }, now);
+    if (t > 0.9 && t < 2.2) bubble('NO AI!', hx + 10, G - 46);
+    // slop seeping in from the right
+    for (let i = 0; i < 6; i++) drawSlop(256 + i * T, G - T, i, now);
+  } else {
+    const dash = t > 1.4;
+    const x = dash ? 112 + (t - 1.4) ** 2 * 120 : 112;
+    if (dash) {
+      ctx.fillStyle = COLORS.D;
+      ctx.fillRect(112, G, Math.max(0, x - 112), 2);
+    }
+    const squat = !dash && t > 0.8 ? 3 : 0;
+    drawClawd(x, G, 1, dash ? (Math.floor(now * 12) % 2 ? 'run' : 'idle') : 'idle', -squat, true);
+    if (!dash) bubble('GRR!', 119, G - 18);
+    for (let i = 0; i < 6; i++) drawSlop(256 + i * T, G - T, i, now);
+  }
+}
+
 // ---------------------------------------------------------------- loop
 
 let lastTime = performance.now(), acc = 0;
@@ -635,7 +796,8 @@ function frame(now) {
     acc = 0;
     $('#tip').hidden = true;
   }
-  render(state === 'pause' ? 0 : dt);
+  if (state === 'intro') renderIntro(dt);
+  else render(state === 'pause' ? 0 : dt);
   requestAnimationFrame(frame);
 }
 
@@ -647,7 +809,10 @@ function frame(now) {
   g.drawImage(SPR.clawd.idle[1], 0, 0, c.width, c.height);
 }
 
-document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+document.addEventListener('visibilitychange', () => {
+  const ac = audioGraph()?.ac;
+  if (document.hidden) { pause(); ac?.suspend(); } else ac?.resume();
+});
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
 }
