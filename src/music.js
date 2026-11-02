@@ -51,6 +51,30 @@ const TRACKS = {
     mel: ['C5 - Eb5 - G5 - - Eb5', 'Ab4 - C5 - Eb5 - - C5', 'Bb4 - D5 - F5 - - D5', 'B4 - D5 - G5 - - -',
       'G5 - Eb5 C5 - G5 Ab5 G5', 'Ab5 - Eb5 C5 - Ab4 C5 Eb5', 'F5 - D5 Bb4 - F5 G5 F5', 'D5 - B4 - G4 - - -'],
   },
+  'token-limit': {
+    bpm: 148, chords: 'Am Em F G', arp: true,
+    bass: 'x.x.x.x.o.x.x.x.', k: 'x...x...x...x...', s: '....x.......x...', h: 'x.x.x.x.x.x.x.x.',
+    mel: ['A5 - E5 - A5 B5 C6 -', 'B5 - G5 - E5 - G5 -', 'A5 - F5 - C5 - F5 A5', 'G5 - - D5 G5 - B5 -',
+      'C6 - B5 A5 - E5 A5 -', 'B5 - A5 G5 - E5 - -', 'F5 A5 C6 - A5 - F5 -', 'G5 - B5 - D6 - - -'],
+  },
+  'prompt-injection': {
+    bpm: 136, chords: 'Dm Am Bb C', arp: false,
+    bass: 'x..x..x.x..x..x.', k: 'x..x..x.x.......', s: '....x.......x...', h: 'x.x.x.x.x.x.x.xx',
+    mel: ['D5 - F5 - A5 - . D6', 'C6 - A5 - E5 - . A5', 'Bb5 - F5 - D5 - F5 -', 'C6 - G5 - E5 - C5 -',
+      'D5 E5 F5 - A5 - G5 F5', 'E5 - C5 - A4 - - -', 'D5 F5 Bb5 - A5 G5 F5 -', 'G5 - E5 - C6 - - -'],
+  },
+  'rate-limited': {
+    bpm: 156, chords: 'Em G D C', arp: true,
+    bass: 'x.x.x.x.x.x.x.x.', k: 'x...x...x...x...', s: '....x.......x...', h: 'xxxxxxxxxxxxxxxx',
+    mel: ['E5 G5 B5 - G5 - E5 -', 'D5 G5 B5 - D6 - B5 -', 'D5 F#5 A5 - F#5 - D5 -', 'C5 E5 G5 - E5 - C5 -',
+      'B5 - A5 G5 - E5 G5 -', 'B5 - D6 - B5 - G5 -', 'A5 - F#5 D5 - A5 F#5 -', 'G5 - E5 - C5 - E5 -'],
+  },
+  'merge-conflict': {
+    bpm: 164, chords: 'F#m D A E', arp: true,
+    bass: 'x.xxx.x.x.xxx.x.', k: 'x..x..x...x..x..', s: '....x.......x...', h: 'x.xxx.xxx.xxx.xx',
+    mel: ['F#5 - A5 - C#6 - A5 F#5', 'D5 - F#5 - A5 - D6 -', 'C#6 - A5 - E5 - A5 -', 'B5 - G#5 - E5 - B4 -',
+      'F#5 A5 C#6 - E6 - C#6 A5', 'F#5 - D5 - A4 - D5 -', 'E5 - A5 - C#6 - E6 -', 'G#5 - B5 - E6 - - -'],
+  },
   'the-hater': {
     bpm: 172, chords: 'Em C Am B', arp: true,
     bass: 'xoxoxoxoxoxoxoxo', k: 'x..xx...x..xx...', s: '....x.......x...', h: 'xxxxxxxxxxxxxxxx',

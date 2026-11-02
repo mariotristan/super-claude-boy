@@ -17,6 +17,10 @@ const THEMES = [
   { sky: ['#24140f', '#4a2a1c'], solid: '#5a3e33', top: '#c48a6a', dot: '#6b4b3f' },
   { sky: ['#101826', '#2a2140'], solid: '#3b3552', top: '#9a8fd0', dot: '#4a4366' },
   { sky: ['#2a0d12', '#4d1a22'], solid: '#4a2a30', top: '#d0707a', dot: '#5c363d' },
+  { sky: ['#0d1f22', '#163a3f'], solid: '#2b4f53', top: '#6fc2bf', dot: '#365f63' },
+  { sky: ['#1a1030', '#3a1d4a'], solid: '#4a2e5c', top: '#c27fd6', dot: '#5a3a6e' },
+  { sky: ['#14161f', '#2a2a3d'], solid: '#3a3a52', top: '#d0a85c', dot: '#47475f' },
+  { sky: ['#101a14', '#1f3326'], solid: '#2f4a38', top: '#8fc98a', dot: '#3a5a44' },
 ];
 const DEATH_LINES = {
   slop: ['Drowned in slop.', 'Too much slop.', 'Slop happens.'],
@@ -148,8 +152,8 @@ function openSelect() {
   grid.innerHTML = '';
   LEVELS.forEach((def, i) => {
     const b = document.createElement('button');
-    const locked = i >= save.unlocked;
     const best = save.best[def.id];
+    const locked = i >= save.unlocked && best == null; // levels you've cleared stay open
     b.className = 'level-card' + (locked ? ' locked' : '') + (best != null && best <= def.par ? ' aplus' : '');
     b.disabled = locked;
     b.innerHTML = `<span class="num">${i + 1}${def.boss ? ' ☠' : ''}</span><span class="name">${locked ? '???' : def.name}</span>`
