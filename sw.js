@@ -1,5 +1,5 @@
 // Offline support: serve from cache, refresh the cache in the background.
-const CACHE = 'super-claude-boy-v1';
+const CACHE = 'super-claude-boy-v2';
 const ASSETS = [
   './', './index.html', './style.css', './manifest.webmanifest',
   './src/main.js', './src/physics.js', './src/levels.js', './src/sprites.js', './src/audio.js', './src/input.js',

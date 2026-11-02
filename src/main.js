@@ -50,6 +50,25 @@ let focusables = [], focusIdx = 0;
 const input = new Input(touchUI, { left: $('#t-left'), right: $('#t-right'), jump: $('#t-jump') });
 input.onSource = () => { syncTouchUI(); paintFocus(); };
 
+// Controller connect / disconnect feedback
+const padName = id => id.replace(/\s*\(.*$/, '').trim() || 'Controller';
+let padCount = 0, toastTimer = 0;
+function toast(text) {
+  const el = $('#toast');
+  el.textContent = text;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 2500);
+}
+input.onPadChange = (addedId, count) => {
+  if (addedId) toast(`🎮 ${padName(addedId)} connected`);
+  else if (count < padCount) toast('🎮 Controller disconnected');
+  padCount = count;
+  const hint = $('#pad-hint');
+  hint.textContent = count ? `🎮 ${padName(input.padIds.split('|')[0])} ready · press A to play` : '🎮 Using a controller? Press any button on it to connect.';
+  hint.classList.toggle('ready', count > 0);
+};
+
 function show(name) {
   state = name;
   for (const [k, el] of Object.entries(screens)) el.hidden = k !== name;
@@ -248,6 +267,7 @@ function die(cause) {
   persist();
   const lines = DEATH_LINES[cause] || DEATH_LINES.slop;
   run.cause = lines[(Math.random() * lines.length) | 0];
+  if (run.deaths > 3 && def.tips?.length) run.tip = def.tips[(run.deaths - 4) % def.tips.length];
   $('#hud-deaths').textContent = `💀 ${run.deaths}`;
   sfx.play('die');
   const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
@@ -457,7 +477,7 @@ function render(dt) {
   if (flash > 0) { ctx.fillStyle = `rgba(255,255,255,${flash * 2})`; ctx.fillRect(0, 0, W, H); flash -= dt; }
 
   // overlay messages
-  const msg = run.dead ? run.cause : !run.started ? def.hint : '';
+  const msg = run.dead ? run.cause : !run.started && !run.tip ? def.hint : '';
   if (msg && state === 'play') {
     ctx.font = `bold ${Math.round(18 * Math.min(3, window.devicePixelRatio || 1))}px ui-monospace, Menlo, monospace`;
     ctx.textAlign = 'center';
@@ -608,7 +628,13 @@ function frame(now) {
     acc += dt;
     while (acc >= DT) { step(); acc -= DT; }
     $('#hud-time').textContent = fmt(run.steps * DT);
-  } else acc = 0;
+    const tipEl = $('#tip'), showTip = !!run.tip && (run.dead || !run.started);
+    if (showTip && tipEl.dataset.text !== run.tip) { tipEl.dataset.text = run.tip; tipEl.textContent = `💡 Tip: ${run.tip}`; }
+    if (tipEl.hidden === showTip) tipEl.hidden = !showTip;
+  } else {
+    acc = 0;
+    $('#tip').hidden = true;
+  }
   render(state === 'pause' ? 0 : dt);
   requestAnimationFrame(frame);
 }

@@ -4,10 +4,16 @@
 //   b  slop blob      p  protester            H  The Hater (boss)
 // Moving saws go in `saws`: { path: [[tx,ty],...], speed, loop } or { orbit: [tx,ty], radius, speed, phase }.
 // `par` is the target time (seconds) for an A+ grade.
+// `tips` are shown, one per death, once the player has died more than three times.
 
 export const LEVELS = [
   {
     id: 'hello-world',
+    tips: [
+      "Hold jump longer to jump higher. Tap it for a short hop.",
+      "Drop to the low floor before the slop, then jump up onto the floating platforms.",
+      "You can steer in mid-air. Let go of the direction if you're about to overshoot.",
+    ],
     name: 'Hello, World',
     hint: 'Run, jump, avoid the slop.',
     theme: 0,
@@ -28,6 +34,12 @@ export const LEVELS = [
   },
   {
     id: 'wall-jump-101',
+    tips: [
+      "Jump into a wall, then press jump again to kick off it.",
+      "In the first shaft, bounce left and right between the two walls to climb.",
+      "Hold toward a wall to slide down it slowly while you line up the next jump.",
+      "Clear the slop with a running jump onto the narrow floor, then climb the skinny shaft.",
+    ],
     name: 'Wall Jump 101',
     hint: 'Jump into a wall, then jump again.',
     theme: 1,
@@ -54,6 +66,11 @@ export const LEVELS = [
   },
   {
     id: 'slop-pit',
+    tips: [
+      "Blobs and protesters turn around at edges. Jump over them, don't run into them.",
+      "Wait for the blob on the long platform to walk away before you land.",
+      "Run at full speed before jumping the wide gaps.",
+    ],
     name: 'The Slop Pit',
     hint: 'Blobs of AI slop. Do not touch.',
     theme: 2,
@@ -74,6 +91,11 @@ export const LEVELS = [
   },
   {
     id: 'sawmill',
+    tips: [
+      "Saws follow the dotted lines. Watch one full cycle before you commit.",
+      "Tap jump for a short hop under the sideways saw over the second pit.",
+      "In the final shaft you can climb one wall: jump off it, then steer back toward it.",
+    ],
     name: 'Hallucination Sawmill',
     hint: 'Watch the saws. Time your jumps.',
     theme: 3,
@@ -104,6 +126,11 @@ export const LEVELS = [
   },
   {
     id: 'context-collapse',
+    tips: [
+      "Crumbling blocks fall about a third of a second after you land. Never stop on them.",
+      "Jump again the moment you touch a crumbling block.",
+      "On the top platform, run for Byte when the protester walks away from you.",
+    ],
     name: 'Context Collapse',
     hint: 'Crumbling blocks. Keep moving.',
     theme: 4,
@@ -129,6 +156,11 @@ export const LEVELS = [
   },
   {
     id: 'the-hater',
+    tips: [
+      "The Hater only throws when you get close, and he aims where you're heading.",
+      "Change direction or pause for a beat to make his throws miss.",
+      "Time the saw over the last slop pit, then climb the shaft fast and hop left to Byte.",
+    ],
     name: 'The Hater',
     hint: 'He hates AI. He hates you. Save Byte!',
     theme: 5,

@@ -22,6 +22,8 @@ export class Input {
     this.lastSource = matchMedia('(pointer: coarse)').matches ? 'touch' : 'keys';
     this.onNav = () => {};
     this.onSource = () => {};
+    this.onPadChange = () => {};
+    this.padIds = '';
     this.layer = layer;
     this.buttons = buttons; // { left, right, jump } elements for visuals and zone split
 
@@ -83,6 +85,12 @@ export class Input {
 
   pollPads() {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const ids = [...pads].filter(Boolean).map(gp => gp.id).join('|');
+    if (ids !== this.padIds) {
+      const added = ids.split('|').filter(id => id && !this.padIds.split('|').includes(id));
+      this.padIds = ids;
+      this.onPadChange(added[0] || null, ids ? ids.split('|').length : 0);
+    }
     const now = { left: false, right: false, up: false, down: false, jump: false, back: false, pause: false, restart: false };
     for (const gp of pads) {
       if (!gp) continue;
