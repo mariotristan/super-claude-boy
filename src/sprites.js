@@ -277,4 +277,21 @@ export function makeSprites() {
   };
 }
 
+// Per-country re-skins: the same sprite sheets with some palette letters swapped, baked once and cached.
+const variantCache = new Map();
+export function makeVariant(kind, over = {}) {
+  const key = kind + JSON.stringify(over);
+  if (!variantCache.has(key)) {
+    variantCache.set(key, {
+      protester: () => PROTESTER_LEGS.map(legs => both([...PROTESTER_TOP, ...legs], { ...PROTESTER_PAL, ...over })),
+      hype: () => PROTESTER_LEGS.map(legs => both([...HYPE_TOP, ...legs], { ...HYPE_PAL, ...over })),
+      reply: () => PROTESTER_LEGS.map(legs => both([...REPLY_TOP, ...legs], { ...REPLY_PAL, ...over })),
+      typer: () => both(TYPER, { ...TYPER_PAL, ...over }),
+      blob: () => both(BLOB, { ...BLOB_PAL, ...over }, true),
+      bot: () => BOT_ROTORS.map(r => both([r, ...BOT_BODY], { ...BOT_PAL, ...over }, true)),
+    }[kind]());
+  }
+  return variantCache.get(key);
+}
+
 export const COLORS = PAL;

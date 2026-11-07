@@ -55,7 +55,7 @@ Die more than three times on a level and the game starts showing tips for it.
 
 ## Levels
 
-Fifteen levels, then the credits:
+Twenty levels, then the credits. Levels 15–19 are a trip through Latin America, each with villains dressed for the country:
 
 | # | Level | What it teaches |
 |---|---|---|
@@ -73,7 +73,12 @@ Fifteen levels, then the credits:
 | 12 | All Caps | Three floors of Keyboard Warriors firing ALL CAPS shots |
 | 13 | Hype Cycle | Up the peak of inflated expectations, through the trough, onto the plateau |
 | 14 | Dead Internet | Every new villain at once, up a bot-guarded shaft |
-| 15 | The Hater | The boss throws signs and tomatoes while you climb to Byte |
+| 15 | Pirámide del Sol (México) | Climbing a stepped pyramid past skull-faced Calaveras protesters |
+| 16 | Cumbre Cafetera (Colombia) | A wall-jump climb past furious coffee-bean blobs |
+| 17 | Machu Picchu (Perú) | Crumbling stone terraces patrolled by Cóndor drones |
+| 18 | Carnaval do Rio (Brasil) | Sprinting samba-dancer Hype Bros between floats |
+| 19 | Tango en Buenos Aires (Argentina) | Mate-sipping Reply Guys and football-fan Keyboard Warriors |
+| 20 | The Hater | The boss throws signs and tomatoes while you climb to Byte |
 
 ## How it's built
 
@@ -84,7 +89,7 @@ index.html        screens (title, intro, level select, results, pause, ending) a
 style.css         layout, touch controls, safe areas for the iPad notch and home bar
 src/main.js       game loop, rendering, camera, screens, saving, ghosts, intro and outro scenes
 src/physics.js    level parsing, movement, collision, saws, walkers, the boss (no DOM)
-src/levels.js     the fifteen levels as text maps, plus hints, tips and par times
+src/levels.js     the twenty levels as text maps, plus hints, tips and par times
 src/sprites.js    pixel-art sprites written as strings, baked into small canvases at startup
 src/input.js      touch zones, keyboard and gamepad, merged into one input state
 src/audio.js      sound effects synthesized with Web Audio

@@ -1,6 +1,6 @@
 import { T, DT, parseLevel, newPlayer, stepPlayer, updateWorld, checkDeath, touchesGoal, tileAt, isSolid } from './physics.js';
 import { LEVELS } from './levels.js';
-import { makeSprites, COLORS } from './sprites.js';
+import { makeSprites, makeVariant as variant, COLORS } from './sprites.js';
 import { sfx, audioGraph } from './audio.js';
 import { music } from './music.js';
 import { Input } from './input.js';
@@ -26,6 +26,11 @@ const THEMES = [
   { sky: ['#1f0f0a', '#3d1d12'], solid: '#4d2a1f', top: '#ff8a4c', dot: '#5e3527' },
   { sky: ['#1d0f26', '#3d1a3a'], solid: '#4a2a48', top: '#ffcf5c', dot: '#5a3557' },
   { sky: ['#0e0f10', '#1f2324'], solid: '#2c3133', top: '#9fe870', dot: '#383e40' },
+  { sky: ['#2a0f2e', '#5a1f3a'], solid: '#5e3a3a', top: '#ffa31a', dot: '#704646' },  // México
+  { sky: ['#0d2a14', '#1f4d22'], solid: '#3b4f2c', top: '#ffd23f', dot: '#4a6038' },  // Colombia
+  { sky: ['#2a1a14', '#5a3224'], solid: '#6a5a48', top: '#e8d5b0', dot: '#7a6a56' },  // Perú
+  { sky: ['#07281c', '#0f5a3e'], solid: '#1f6b4a', top: '#ffe14d', dot: '#2a7d58' },  // Brasil
+  { sky: ['#12304f', '#3a7ab0'], solid: '#46739c', top: '#eaf6ff', dot: '#5483ad' },  // Argentina
 ];
 const DEATH_LINES = {
   slop: ['Drowned in slop.', 'Too much slop.', 'Slop happens.'],
@@ -42,7 +47,7 @@ const DEATH_LINES = {
 
 const SAVE_KEY = 'super-claude-boy-v1';
 const save = (() => {
-  const base = { best: {}, ghosts: {}, unlocked: 1, deaths: 0, muted: false, music: true, seenIntro: false };
+  const base = { best: {}, ghosts: {}, unlocked: 1, deaths: 0, muted: false, music: true, ctrlSize: 'm', seenIntro: false };
   try { return { ...base, ...JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') }; } catch { return base; }
 })();
 const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch { /* storage full or private mode */ } };
@@ -154,6 +159,16 @@ function updateMusicLabels() {
   for (const id of ['#btn-music', '#btn-p-music']) $(id).textContent = `♪ Music: ${save.music ? 'On' : 'Off'}`;
 }
 updateMusicLabels();
+
+// Touch control size (S/M/L)
+const SIZES = ['s', 'm', 'l'];
+function applyCtrlSize() {
+  const sz = SIZES.includes(save.ctrlSize) ? save.ctrlSize : 'm';
+  $('#touch').dataset.size = sz;
+  $('#btn-size').textContent = `Controls: ${sz.toUpperCase()}`;
+}
+$('#btn-size').onclick = () => { save.ctrlSize = SIZES[(SIZES.indexOf(save.ctrlSize) + 1) % 3]; persist(); applyCtrlSize(); };
+applyCtrlSize();
 
 // Select
 function openSelect() {
@@ -467,6 +482,21 @@ function render(dt) {
   // goal
   drawByte(lv.goal, t);
 
+  // in-world signposts
+  if (def.signs) {
+    ctx.font = 'bold 6px ui-monospace, Menlo, monospace';
+    ctx.textAlign = 'center';
+    const bob = Math.sin(t * 3) * 1.5;
+    for (const sg of def.signs) {
+      const lines = sg.text.split('\n');
+      lines.forEach((ln, i) => {
+        const x = sg.tx * T + T / 2, y = sg.ty * T + i * 8 + bob;
+        ctx.fillStyle = '#000000cc'; ctx.fillText(ln, x + 0.5, y + 0.5);
+        ctx.fillStyle = '#ffd9a0'; ctx.fillText(ln, x, y);
+      });
+    }
+  }
+
   // ghost of best run
   if (ghost && run.started) {
     const i = Math.min(Math.floor(run.steps / 2), ghost.length / 4 - 1) * 4;
@@ -485,14 +515,17 @@ function render(dt) {
     if (b.kind === 'k') return drawTyper(b, i, t);
     if (b.kind === 'b') {
       const wob = Math.sin(t * 8 + i * 1.7) * 0.08;
-      ctx.drawImage(SPR.blob[b.dir], b.x - 1, b.y - 2 - wob * 12, 16, 12 * (1 + wob));
+      const c = def.cast?.b, lines = c?.lines || BLOB_LINES;
+      ctx.drawImage((c ? variant('blob', c.pal) : SPR.blob)[b.dir], b.x - 1, b.y - 2 - wob * 12, 16, 12 * (1 + wob));
       const talk = (t + i * 2.3) % 6;
-      if (talk < 1.8) bubble(BLOB_LINES[Math.floor((t + i * 2.3) / 6 + i) % BLOB_LINES.length], b.x + 7, b.y - 6);
+      if (talk < 1.8) bubble(lines[Math.floor((t + i * 2.3) / 6 + i) % lines.length], b.x + 7, b.y - 6);
     } else {
       const step = Math.floor(t * 6 + i) % 2;
       const hx = b.dir > 0 ? b.x + 9.5 : b.x + 0.5;
-      drawSign(hx, b.y - 13 - step, PROTEST_SIGNS[i % PROTEST_SIGNS.length], undefined, 16);
-      ctx.drawImage(SPR.protester[i % SPR.protester.length][step][b.dir], Math.round(b.x - 1), Math.round(b.y - 1));
+      const c = def.cast?.p, signs = c?.lines || PROTEST_SIGNS;
+      drawSign(hx, b.y - 13 - step, signs[i % signs.length], undefined, 16);
+      const spr = c ? variant('protester', c.pal)[step] : SPR.protester[i % SPR.protester.length][step];
+      ctx.drawImage(spr[b.dir], Math.round(b.x - 1), Math.round(b.y - 1));
     }
   });
 
@@ -696,7 +729,7 @@ function drawShot(sh) {
   if (sh.kind === 'caps') {
     // an ALL CAPS comment flying straight at you
     ctx.rotate(-sh.rot + Math.sin(sh.rot * 3) * 0.15);
-    const text = CAPS_WORDS[sh.n % CAPS_WORDS.length];
+    const words = def.cast?.k?.words || CAPS_WORDS, text = words[sh.n % words.length];
     ctx.font = 'bold 6px ui-monospace, Menlo, monospace';
     const w = Math.ceil(ctx.measureText(text).width) + 4;
     ctx.fillStyle = '#1b1420'; ctx.fillRect(-w / 2 - 1, -5, w + 2, 10);
@@ -734,35 +767,38 @@ function drawHypeBro(b, i, t) {
   const step = Math.floor(t * 12 + i) % 2;
   ctx.fillStyle = '#ffffff44';
   for (let k = 0; k < 3; k++) ctx.fillRect(Math.round(b.x + (b.dir > 0 ? -5 - k * 3 : b.w + 2 + k * 3)), Math.round(b.y + 4 + k * 4), 3, 1);
-  ctx.drawImage(SPR.hype[step][b.dir], Math.round(b.x - 1), Math.round(b.y - 1 - step));
-  chatter(HYPE_LINES, i, t, b.x + 5, b.y - 6, 5, 1.6);
+  const c = def.cast?.f;
+  ctx.drawImage((c ? variant('hype', c.pal) : SPR.hype)[step][b.dir], Math.round(b.x - 1), Math.round(b.y - 1 - step));
+  chatter(c?.lines || HYPE_LINES, i, t, b.x + 5, b.y - 6, 5, 1.6);
 }
 
 // Reply Guy: hops on the spot, phone out, always facing you.
 function drawReplyGuy(b, i, t) {
   const face = player.x + player.w / 2 < b.x + b.w / 2 ? -1 : 1;
   const air = b.y < b.ground - 0.5;
-  ctx.drawImage(SPR.reply[air ? 1 : 0][face], Math.round(b.x - 1), Math.round(b.y - 1));
+  const c = def.cast?.r;
+  ctx.drawImage((c ? variant('reply', c.pal) : SPR.reply)[air ? 1 : 0][face], Math.round(b.x - 1), Math.round(b.y - 1));
   if (air) {
     // little "…" typing indicator above his head
     ctx.fillStyle = '#ffffff';
     for (let k = 0; k < 3; k++) if (Math.floor(t * 6) % 4 > k) ctx.fillRect(Math.round(b.x + 1 + k * 3), Math.round(b.y - 4), 2, 2);
   } else {
-    chatter(REPLY_LINES, i, t, b.x + 5, b.y - 6, 5.5, 1.8);
+    chatter(c?.lines || REPLY_LINES, i, t, b.x + 5, b.y - 6, 5.5, 1.8);
   }
 }
 
 // Keyboard Warrior: shakes with rage while typing; steam rises when he fires.
 function drawTyper(b, i, t) {
   const rage = b.anim > 0 ? Math.round(Math.sin(t * 90)) : 0;
-  ctx.drawImage(SPR.typer[b.dir], Math.round(b.x - 1 + rage), Math.round(b.y));
+  const c = def.cast?.k;
+  ctx.drawImage((c ? variant('typer', c.pal) : SPR.typer)[b.dir], Math.round(b.x - 1 + rage), Math.round(b.y));
   const head = b.dir > 0 ? b.x + 3 : b.x + 9;
   ctx.fillStyle = '#ffffff66';
   for (let k = 0; k < 2; k++) {
     const a = (t * 1.5 + k * 0.5 + i * 0.3) % 1;
     ctx.fillRect(Math.round(head + k * 4 - 2 + Math.sin(a * 6) * 1.5), Math.round(b.y - 2 - a * 8), 2, 2);
   }
-  chatter(TYPER_LINES, i, t, b.x + 7, b.y - 8, 7, 1.6);
+  chatter(c?.lines || TYPER_LINES, i, t, b.x + 7, b.y - 8, 7, 1.6);
 }
 
 // Scraper Bot: a little drone with a camera eye that scans with a cone of light.
@@ -775,9 +811,10 @@ function drawBot(s, i, t) {
   ctx.beginPath();
   const ex = dir < 0 ? x + 4 : x + 12, ey = y + 6;
   ctx.moveTo(ex, ey); ctx.lineTo(ex + dir * 6 - 5, ey + 22); ctx.lineTo(ex + dir * 6 + 5, ey + 22); ctx.fill();
-  ctx.drawImage(SPR.bot[Math.floor(t * 20) % 2][dir], x, y);
+  const c = def.cast?.bot;
+  ctx.drawImage((c ? variant('bot', c.pal) : SPR.bot)[Math.floor(t * 20) % 2][dir], x, y);
   if (Math.floor(t * 3 + i) % 2) { ctx.fillStyle = '#ff3b3b'; ctx.fillRect(dir < 0 ? x + 13 : x + 2, y + 5, 1, 1); }
-  chatter(BOT_LINES, i, t, s.cx, y - 4, 6.5, 1.6);
+  chatter(c?.lines || BOT_LINES, i, t, s.cx, y - 4, 6.5, 1.6);
 }
 
 function drawByte(g, t) {
@@ -1069,8 +1106,12 @@ function frame(now) {
     acc += dt;
     while (acc >= DT) { step(); acc -= DT; }
     $('#hud-time').textContent = fmt(run.steps * DT);
-    const tipEl = $('#tip'), showTip = !!run.tip && (run.dead || !run.started);
-    if (showTip && tipEl.dataset.text !== run.tip) { tipEl.dataset.text = run.tip; tipEl.textContent = `💡 Tip: ${run.tip}`; }
+    // Lost? Once an attempt runs long without dying, cycle the level's tips so players aren't stuck.
+    const elapsed = run.steps * DT, lostAfter = Math.max(12, (def.par || 5) * 2.5);
+    const lost = run.started && !run.dead && !run.won && def.tips?.length && elapsed > lostAfter;
+    const tipText = lost ? def.tips[Math.floor((elapsed - lostAfter) / 7) % def.tips.length] : run.tip;
+    const tipEl = $('#tip'), showTip = !!tipText && (lost || run.dead || !run.started);
+    if (showTip && tipEl.dataset.text !== tipText) { tipEl.dataset.text = tipText; tipEl.textContent = `💡 Tip: ${tipText}`; }
     if (tipEl.hidden === showTip) tipEl.hidden = !showTip;
   } else {
     acc = 0;

@@ -52,9 +52,12 @@ export class Input {
     const move = e => {
       if (!this.touches.has(e.pointerId)) return;
       e.preventDefault();
-      const z = this.zoneOf(e), old = this.touches.get(e.pointerId);
+      const old = this.touches.get(e.pointerId);
+      // A thumb that started on jump stays on jump; one that started on a direction never
+      // slides into jump, and only flips direction after clearly crossing the gap.
+      if (old === 'jump') return;
+      const z = this.zoneOf(e, old);
       if (z === old) return;
-      if (z === 'jump') this.jumpQueued = true;
       this.touches.set(e.pointerId, z);
       this.paint();
     };
@@ -71,10 +74,15 @@ export class Input {
     if (this.lastSource !== s) { this.lastSource = s; this.onSource(s); }
   }
 
-  zoneOf(e) {
-    if (e.clientX >= innerWidth / 2) return 'jump';
+  zoneOf(e, old) {
     const l = this.buttons.left.getBoundingClientRect(), r = this.buttons.right.getBoundingClientRect();
     const mid = (l.left + l.right + r.left + r.right) / 4;
+    if (old) { // already steering: hysteresis so a drifting thumb keeps its direction
+      const slack = 24;
+      if (old === 'left') return e.clientX > mid + slack ? 'right' : 'left';
+      return e.clientX < mid - slack ? 'left' : 'right';
+    }
+    if (e.clientX >= innerWidth / 2) return 'jump';
     return e.clientX < mid ? 'left' : 'right';
   }
 
