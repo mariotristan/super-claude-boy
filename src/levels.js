@@ -7,6 +7,7 @@
 // Add `bot: true` to make one a Scraper Bot (smaller hitbox, drawn as a drone).
 // `par` is the target time (seconds) for an A+ grade.
 // `signs` are in-world arrows/labels: { tx, ty, text } (use \n for line breaks).
+// `flag` (mx, co, pe, br, ar) plants the country's flag at the start and by Byte and adds its emoji to the level name.
 // `cast` re-skins a villain kind (p, b, f, r, k, bot) for a level: { name, pal (sprite colour overrides), lines (speech/sign text), words (k: ALL CAPS shots) }.
 // `tips` are shown, one per death, once the player has died more than three times.
 
@@ -499,6 +500,7 @@ export const LEVELS = [
   },
   {
     id: 'piramide-del-sol',
+    flag: 'mx',
     tips: [
       "Climb the steps one ledge at a time; each step is two tiles up.",
       "Hop over the slop vents on the lowest ledges.",
@@ -509,7 +511,7 @@ export const LEVELS = [
     theme: 15,
     par: 7.0,
     cast: {
-      p: {name:"Calaveras", pal:{s:"#F4F0E4", S:"#CFC8B6", h:"#1b1420", c:"#E8742A", C:"#B8541C", n:"#2a1f3a", N:"#1a1228"}, lines:["¡NO A LA IA!","CALAVERA","¡ÓRALE!","NI UN BOT","DÍA DE MUERTOS"]},
+      p: {name:"Calaveras", pal:{s:"#F4F0E4", S:"#CFC8B6", h:"#1b1420", c:"#006847", C:"#004a33", n:"#ffffff", N:"#cfcfcf"}, lines:["¡NO A LA IA!","CALAVERA","¡ÓRALE!","¡VIVA EL TRI!","DÍA DE MUERTOS"]},
     },
     saws: [
       {orbit:[29,3], radius:2, speed:2},
@@ -534,6 +536,7 @@ export const LEVELS = [
   },
   {
     id: 'cumbre-cafetera',
+    flag: 'co',
     tips: [
       "Run through the low gap under the tall wall to reach the shaft.",
       "In the shaft, jump into a wall, then jump again to kick off it. Bounce between the two walls to climb.",
@@ -544,7 +547,7 @@ export const LEVELS = [
     theme: 16,
     par: 6.0,
     cast: {
-      b: {name:"Granos de café", pal:{g:"#2e1a0e", G:"#7a4a2a", L:"#c28a58", D:"#4f2f19"}, lines:["¿Un tintico?","Parce…","¡Qué chimba!","Café con IA","Sin azúcar"]},
+      b: {name:"Granos de café", pal:{g:"#003893", G:"#FCD116", L:"#FFE97A", D:"#CE1126"}, lines:["¿Un tintico?","Parce…","¡Qué chimba!","¡Vamos Colombia!","Sin azúcar"]},
     },
     map: [
       '####################',
@@ -579,6 +582,7 @@ export const LEVELS = [
   },
   {
     id: 'machu-picchu',
+    flag: 'pe',
     tips: [
       "Hop from terrace to terrace; the slop below is a long way down.",
       "Crumbling stones hold for a heartbeat: keep moving.",
@@ -589,7 +593,7 @@ export const LEVELS = [
     theme: 17,
     par: 7.0,
     cast: {
-      bot: {name:"Cóndores", pal:{m:"#2b2b36", M:"#15151c", L:"#f4f4f4", e:"#ffd23f", E:"#c9a21c", r:"#ff8a2a", p:"#444452"}, lines:["¡Cóndor pasa!","Vuelo bajo…","Tu data: mía","Vista aérea"]},
+      bot: {name:"Cóndores", pal:{m:"#f4f4f4", M:"#cfcfcf", L:"#D91023", e:"#D91023", E:"#8a0a16", r:"#D91023", p:"#e8e8e8"}, lines:["¡Cóndor pasa!","Vuelo bajo…","Tu data: mía","¡Arriba Perú!"]},
     },
     saws: [
       {path:[[16,8],[28,8]], speed:70, bot:true},
@@ -617,6 +621,7 @@ export const LEVELS = [
   },
   {
     id: 'carnaval',
+    flag: 'br',
     tips: [
       "Hype Bros sprint back and forth; jump over them as they turn.",
       "The raised floats let you bypass the slop pits.",
@@ -627,7 +632,7 @@ export const LEVELS = [
     theme: 18,
     par: 7.0,
     cast: {
-      f: {name:"Passistas", pal:{y:"#2a1a10", V:"#1fa34a", v:"#127a34", w:"#ffe14d", n:"#2d63c9", N:"#1f4a99", s:"#C68A62", S:"#9E6A47"}, lines:["Vem pro samba!","Ôôô!","Compra meu curso!","AGI semana que vem!"]},
+      f: {name:"Passistas", pal:{y:"#2a1a10", V:"#FEDD00", v:"#C9A800", w:"#FEDD00", n:"#002776", N:"#001a52", s:"#C68A62", S:"#9E6A47"}, lines:["Vem pro samba!","Ôôô!","Compra meu curso!","Pra frente, Brasil!"]},
     },
     saws: [
       {orbit:[30,9], radius:2, speed:2.4},
@@ -652,6 +657,7 @@ export const LEVELS = [
   },
   {
     id: 'tango-buenos-aires',
+    flag: 'ar',
     tips: [
       "Reply Guys hop in place: run under them as they come down.",
       "The middle platform has two Keyboard Warriors; keep moving to dodge their shots.",
@@ -662,8 +668,8 @@ export const LEVELS = [
     theme: 19,
     par: 6.5,
     cast: {
-      r: {name:"Los Che", pal:{g:"#8EC9F2", G:"#FFFFFF", h:"#2a1a10", X:"#3a7a3a", x:"#b6e87a"}, lines:["Che, boludo…","¿Mate?","Ni ahí","Eso no es asado","¿Fuente?"]},
-      k: {name:"Hinchas", pal:{t:"#8EC9F2", r:"#ffffff"}, lines:["¡VAMOS!","AGUANTE","¡DALE!","ALE ALE"], words:["¡VAMOS!","AGUANTE","¡DALE!","ALE ALE","OLÉ"]},
+      r: {name:"Los Che", pal:{g:"#74ACDF", G:"#FFFFFF", h:"#2a1a10", n:"#1b1b22", N:"#101015", X:"#3a7a3a", x:"#b6e87a"}, lines:["Che, boludo…","¿Mate?","Ni ahí","Eso no es asado","¿Fuente?"]},
+      k: {name:"Hinchas", pal:{t:"#74ACDF", r:"#ffffff"}, lines:["¡VAMOS!","AGUANTE","¡DALE!","ALE ALE"], words:["¡VAMOS!","AGUANTE","¡DALE!","ALE ALE","OLÉ"]},
     },
     saws: [
       {orbit:[20,8], radius:2, speed:2},

@@ -105,6 +105,37 @@ const TRACKS = {
     mel: ['Eb5 - Gb5 - Bb5 - Gb5 -', 'B4 - Eb5 - Gb5 - Eb5 -', 'Gb5 - Bb5 - Db6 - Bb5 -', 'Ab5 - F5 - Db5 - - -',
       'Bb5 - Ab5 Gb5 - Eb5 - -', 'Gb5 - Eb5 B4 - Eb5 Gb5 -', 'Db6 - Bb5 Gb5 - Bb5 Db6 -', 'Ab5 - - - F5 - Db5 -'],
   },
+  // ---- LATAM levels: original tunes in each country's style
+  'piramide-del-sol': { // México: ranchera / mariachi oom-pah, trumpet-style lines
+    bpm: 140, chords: 'Am Dm E Am', arp: false,
+    bass: 'x.f.x.f.x.f.x.f.', k: 'x...x...x...x...', s: '..x...x...x...x.', h: 'x.x.x.x.x.x.x.x.',
+    mel: ['A5 - C6 - E6 - C6 A5', 'D6 - C6 - A5 - F5 -', 'G#5 - B5 - E6 - D6 B5', 'A5 - - - E5 - - -',
+      'C6 - E6 - A6 - E6 C6', 'D6 - F6 - A6 - F6 D6', 'E6 - D6 B5 - G#5 B5 D6', 'A5 - - - A5 . . .'],
+  },
+  'cumbre-cafetera': { // Colombia: cumbia, accordion-style syncopation
+    bpm: 100, chords: 'Gm Cm D Gm', arp: false,
+    bass: 'x...x.f.x...x.f.', k: 'x.....x.x.....x.', s: '....x.......x...', h: 'x.x.xxx.x.x.xxx.',
+    mel: ['G5 . Bb5 G5 . D6 - Bb5', 'C6 . Eb6 C6 . G5 - -', 'D6 . F#6 D6 . A5 - F#5', 'G5 - Bb5 - D6 - - -',
+      'D6 . D6 Bb5 . G5 Bb5 D6', 'Eb6 . Eb6 C6 . G5 C6 Eb6', 'F#6 . D6 A5 . F#5 A5 D6', 'G5 - - - G5 . . .'],
+  },
+  'machu-picchu': { // Perú: Andean huayno, pentatonic flute over a charango arpeggio
+    bpm: 120, chords: 'Am G F G', arp: true,
+    bass: 'x..x.x..x..x.x..', k: 'x...x.x.x...x.x.', s: '....x.......x...', h: '..x...x...x...x.',
+    mel: ['E6 - C6 D6 E6 - C6 A5', 'D6 - B5 C6 D6 - B5 G5', 'C6 - A5 - G5 - A5 -', 'B5 - D6 - B5 - - -',
+      'A5 - C6 D6 E6 - G6 E6', 'D6 - E6 D6 B5 - G5 -', 'A5 - C6 - F6 - E6 C6', 'D6 - B5 - G5 - - -'],
+  },
+  carnaval: { // Brasil: samba, syncopated melody over surdo and shaker
+    bpm: 118, chords: 'C Am Dm G', arp: false,
+    bass: 'x..x..o.x..x..o.', k: 'x...x...x...x...', s: '..x..x..x.x..x..', h: 'xxxxxxxxxxxxxxxx',
+    mel: ['E5 . G5 E5 . C5 E5 G5', 'A5 . C6 A5 . E5 A5 C6', 'D6 . D6 C6 . A5 F5 A5', 'B5 - G5 . D5 . G5 B5',
+      'C6 . E6 C6 . G5 C6 E6', 'E6 . D6 C6 . A5 C6 E6', 'F6 . E6 D6 . A5 D6 F6', 'D6 - B5 - G5 - - -'],
+  },
+  'tango-buenos-aires': { // Argentina: tango, dramatic minor with a 3-3-2 bass
+    bpm: 124, chords: 'Dm Gm A Dm', arp: false,
+    bass: 'x..x..x.x..x..x.', k: 'x...x...x...x...', s: '....x.......x..x', h: '..x...x...x...x.',
+    mel: ['D5 . F5 . A5 - G5 F5', 'G5 . Bb5 . D6 - C6 Bb5', 'A5 . C#6 . E6 - D6 C#6', 'D6 - - - A5 . . .',
+      'F5 . A5 . D6 - C6 A5', 'Bb5 . D6 . G6 - F6 D6', 'E6 . C#6 . A5 - E5 G5', 'D5 - - - D5 . . .'],
+  },
   'the-hater': {
     bpm: 172, chords: 'Em C Am B', arp: true,
     bass: 'xoxoxoxoxoxoxoxo', k: 'x..xx...x..xx...', s: '....x.......x...', h: 'xxxxxxxxxxxxxxxx',

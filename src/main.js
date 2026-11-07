@@ -9,6 +9,8 @@ const $ = s => document.querySelector(s);
 const canvas = $('#game');
 const ctx = canvas.getContext('2d');
 const SPR = makeSprites();
+const flagEmoji = code => String.fromCodePoint(...[...code.toUpperCase()].map(c => c.charCodeAt(0) + 0x1F1A5));
+const levelName = d => (d.flag ? `${flagEmoji(d.flag)} ` : '') + d.name;
 
 const THEMES = [
   { sky: ['#1b1530', '#3a2350'], solid: '#4a3b63', top: '#8d7bb5', dot: '#5c4c78' },
@@ -180,7 +182,7 @@ function openSelect() {
     const locked = i >= save.unlocked && best == null; // levels you've cleared stay open
     b.className = 'level-card' + (locked ? ' locked' : '') + (best != null && best <= def.par ? ' aplus' : '');
     b.disabled = locked;
-    b.innerHTML = `<span class="num">${i + 1}${def.boss ? ' ☠' : ''}</span><span class="name">${locked ? '???' : def.name}</span>`
+    b.innerHTML = `<span class="num">${i + 1}${def.boss ? ' ☠' : ''}</span><span class="name">${locked ? '???' : levelName(def)}</span>`
       + `<span class="time">${locked ? '🔒' : best != null ? fmt(best) : 'not cleared'}</span>`
       + (best != null && best <= def.par ? '<span class="grade">A+</span>' : '');
     if (i === Math.min(save.unlocked, LEVELS.length) - 1) b.dataset.default = '';
@@ -231,7 +233,7 @@ function startLevel(i) {
   particles = [];
   run = null;
   ghost = save.ghosts[def.id] || null;
-  $('#hud-level').textContent = `${i + 1}. ${def.name}`;
+  $('#hud-level').textContent = `${i + 1}. ${levelName(def)}`;
   $('#hud-best').textContent = save.best[def.id] != null ? `best ${fmt(save.best[def.id])}` : '';
   run = { deaths: 0 };
   resetAttempt();
@@ -347,7 +349,7 @@ function win() {
   burst(g.x + 6, g.y, 16, COLORS.O, 160, 200);
 
   $('#c-title').textContent = def.boss ? 'Byte is free!' : 'Byte is in another level!';
-  $('#c-level').textContent = `${levelIndex + 1}. ${def.name}`;
+  $('#c-level').textContent = `${levelIndex + 1}. ${levelName(def)}`;
   $('#c-time').textContent = fmt(time);
   $('#c-best').textContent = isBest ? (prev == null ? 'First clear!' : `New best! (was ${fmt(prev)})`) : `Best ${fmt(prev)}`;
   $('#c-best').classList.toggle('new', isBest);
@@ -480,6 +482,10 @@ function render(dt) {
   for (const p of splats) ctx.fillRect(p.x, p.y, p.w, p.h);
 
   // goal
+  if (def.flag) {
+    drawFlag(def.flag, lv.start.x + 18, lv.start.y + 12, t);
+    drawFlag(def.flag, lv.goal.x - 12, lv.goal.y + 14, t + 1);
+  }
   drawByte(lv.goal, t);
 
   // in-world signposts
@@ -745,6 +751,33 @@ function drawShot(sh) {
     ctx.fillStyle = '#c8423b'; ctx.fillRect(-4, -0.5, 8, 1); ctx.fillRect(-0.5, -3, 1, 6);
   }
   ctx.restore();
+}
+
+// ---------------------------------------------------------------- national flags
+
+const FLAG_PAINT = {
+  mx: (u, v) => (Math.hypot(u - 0.5, (v - 0.5) * 0.6) < 0.09 ? '#8b5a2b' : u < 1 / 3 ? '#006847' : u < 2 / 3 ? '#ffffff' : '#CE1126'),
+  co: (u, v) => (v < 0.5 ? '#FCD116' : v < 0.75 ? '#003893' : '#CE1126'),
+  pe: u => (u < 1 / 3 || u > 2 / 3 ? '#D91023' : '#ffffff'),
+  br: (u, v) => (Math.hypot(u - 0.5, (v - 0.5) * 1.6) < 0.2 ? '#012169' : Math.abs(u - 0.5) / 0.42 + Math.abs(v - 0.5) / 0.42 < 1 ? '#FEDD00' : '#009739'),
+  ar: (u, v) => (Math.hypot(u - 0.5, (v - 0.5) * 1.6) < 0.1 ? '#F6B40E' : v < 1 / 3 || v > 2 / 3 ? '#74ACDF' : '#ffffff'),
+};
+
+// A waving flag on a pole; (x, y) is the foot of the pole.
+function drawFlag(code, x, y, t) {
+  const paint = FLAG_PAINT[code];
+  if (!paint) return;
+  ctx.fillStyle = '#d8d8d8'; ctx.fillRect(Math.round(x), Math.round(y - 26), 2, 26);
+  ctx.fillStyle = '#ffd23f'; ctx.fillRect(Math.round(x) - 0.5, Math.round(y - 28), 3, 3);
+  const W = 18, H = 12;
+  for (let cx = 0; cx < W; cx++) {
+    const wave = Math.round(Math.sin(t * 5 - cx * 0.45) * (cx / W) * 1.6);
+    for (let cy = 0; cy < H; cy++) {
+      ctx.fillStyle = paint(cx / W, cy / H);
+      ctx.fillRect(Math.round(x) + 2 + cx, Math.round(y - 25) + cy + wave, 1, 1);
+    }
+  }
+  ctx.fillStyle = '#00000033'; ctx.fillRect(Math.round(x) + 2, Math.round(y - 25) + H, W, 1);
 }
 
 // ---------------------------------------------------------------- more villains
