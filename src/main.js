@@ -1032,17 +1032,107 @@ function drawCode(lines, typed, x, y) {
   }
 }
 
-function drawDesk(G, now, code = null, typed = Infinity, glitch = false) {
-  ctx.fillStyle = '#2a2140'; ctx.fillRect(24, G - 14, 80, 14);
-  ctx.fillStyle = glitch && Math.floor(now * 8) % 2 ? '#2a0d12' : '#0d0a16'; ctx.fillRect(30, G - 56, 68, 40);
-  ctx.fillStyle = '#4a3b63'; ctx.fillRect(28, G - 58, 72, 2); ctx.fillRect(58, G - 16, 10, 4);
-  if (code) { drawCode(code, typed, 33, G - 47); return; }
-  for (let i = 0; i < 6; i++) {
-    const w = 8 + ((i * 37 + Math.floor(now * 2)) % 28);
-    ctx.fillStyle = i % 3 === 0 ? COLORS.O : '#7ed957';
-    ctx.fillRect(34, G - 51 + i * 5, w, 2);
+// Wall monitors: three looks, all procedural so they animate for free.
+function screenFrame(x, y, w, h, glow, draw) {
+  ctx.fillStyle = '#17112a'; ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+  ctx.fillStyle = '#05030a'; ctx.fillRect(x, y, w, h);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  draw(x, y, w, h);
+  ctx.fillStyle = '#00000022'; // scanlines
+  for (let ly = y; ly < y + h; ly += 2) ctx.fillRect(x, ly, w, 1);
+  ctx.restore();
+  ctx.fillStyle = glow + '55'; ctx.fillRect(x - 2, y + h + 2, w + 4, 1);
+  ctx.fillStyle = '#17112a'; ctx.fillRect(x + w / 2 - 3, y + h + 2, 6, 3);
+}
+
+// The Matrix: green glyphs raining down in columns.
+function drawMatrixScreen(x, y, w, h, now) {
+  ctx.font = '5px ui-monospace, Menlo, monospace';
+  ctx.textAlign = 'left';
+  const glyphs = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿ0123456789';
+  for (let c = 0; c < Math.floor(w / 4); c++) {
+    const seed = hash(c, 3), speed = 14 + seed % 20, len = 6 + (seed >> 4) % 6;
+    const head = ((now * speed + (seed >> 8) % 60) % (h + len * 5)) ;
+    for (let k = 0; k < len; k++) {
+      const gy = head - k * 5;
+      if (gy < -5 || gy > h) continue;
+      const g = glyphs[hash(c + k * 7, Math.floor(now * (k ? 2 : 8)) + seed) % glyphs.length];
+      ctx.fillStyle = k === 0 ? '#d8ffd8' : `rgba(40,255,90,${1 - k / len})`;
+      ctx.fillText(g, x + c * 4, y + gy);
+    }
   }
-  if (Math.floor(now * 2) % 2) { ctx.fillStyle = '#fff'; ctx.fillRect(34, G - 21, 3, 2); }
+}
+
+// Hackers (1995): neon wireframe towers flying past, magenta and cyan.
+function drawHackerScreen(x, y, w, h, now) {
+  const cols = ['#00f0ff', '#ff2bd6', '#ffe14d'];
+  for (let layer = 0; layer < 3; layer++) {
+    const speed = 8 + layer * 14, tw = 12 + layer * 4;
+    ctx.strokeStyle = cols[layer]; ctx.lineWidth = 1;
+    for (let i = -1; i < w / tw + 2; i++) {
+      const gx = i + Math.floor((now * speed) / tw);
+      const th = 8 + (hash(gx, layer) % (h - 14));
+      const px = x + i * tw - ((now * speed) % tw);
+      ctx.strokeRect(Math.round(px) + 0.5, Math.round(y + h - th) + 0.5, tw - 3, th);
+      if (layer === 2 && (hash(gx, 9) & 1)) ctx.strokeRect(Math.round(px) + 3.5, Math.round(y + h - th) - 3.5, tw - 9, 3);
+    }
+  }
+  ctx.fillStyle = '#ff2bd6'; ctx.fillRect(x, y + h - 1, w, 1);
+  ctx.font = 'bold 5px ui-monospace, Menlo, monospace'; ctx.textAlign = 'left';
+  ctx.fillStyle = Math.floor(now * 3) % 2 ? '#00f0ff' : '#ffffff';
+  ctx.fillText('HACK THE PLANET', x + 3, y + 8);
+}
+
+// Tron: an orange-and-cyan perspective grid with two light cycles carving trails.
+function drawTronScreen(x, y, w, h, now) {
+  const hz = y + h * 0.42, vx = x + w / 2;
+  ctx.strokeStyle = '#2fd6ff55'; ctx.lineWidth = 1;
+  for (let i = -8; i <= 8; i++) { ctx.beginPath(); ctx.moveTo(vx, hz); ctx.lineTo(vx + i * w * 0.22, y + h); ctx.stroke(); }
+  for (let k = 0; k < 6; k++) {
+    const f = ((k + (now * 0.6) % 1) / 6) ** 2, ly = hz + f * (y + h - hz);
+    ctx.beginPath(); ctx.moveTo(x, ly); ctx.lineTo(x + w, ly); ctx.stroke();
+  }
+  // light-cycle trails drawn along right-angle paths
+  const trail = (pts, color, phase) => {
+    const total = pts.length - 1, prog = ((now * 0.35 + phase) % 1.4) * total;
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(x + pts[0][0] * w, y + pts[0][1] * h);
+    let hx = pts[0][0], hy = pts[0][1];
+    for (let i = 1; i < pts.length && prog > i - 1; i++) {
+      const f = Math.min(1, prog - (i - 1));
+      hx = pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f; hy = pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f;
+      ctx.lineTo(x + hx * w, y + hy * h);
+    }
+    ctx.stroke();
+    if (prog < total) { ctx.fillStyle = '#fff'; ctx.fillRect(x + hx * w - 1.5, y + hy * h - 1.5, 3, 3); }
+  };
+  trail([[0.05, 0.9], [0.05, 0.6], [0.4, 0.6], [0.4, 0.8], [0.85, 0.8]], '#2fd6ff', 0);
+  trail([[0.95, 0.9], [0.95, 0.55], [0.6, 0.55], [0.6, 0.75], [0.2, 0.75]], '#ff8a1f', 0.25);
+}
+
+function drawMonitorWall(G, now) {
+  const y = G - 120, h = 38, w = 52;
+  screenFrame(20, y, w, h, '#28ff5a', (a, b, c, d) => drawMatrixScreen(a, b, c, d, now));
+  screenFrame(78, y, w, h, '#ff2bd6', (a, b, c, d) => drawHackerScreen(a, b, c, d, now));
+  screenFrame(136, y, w, h, '#2fd6ff', (a, b, c, d) => drawTronScreen(a, b, c, d, now));
+  screenFrame(194, y, w, h, '#28ff5a', (a, b, c, d) => drawMatrixScreen(a, b, c, d, now + 7));
+  screenFrame(252, y, w, h, '#ff8a1f', (a, b, c, d) => drawTronScreen(a, b, c, d, now + 3));
+}
+
+function drawDesk(G, now, code = null, typed = Infinity, glitch = false) {
+  drawMonitorWall(G, now);
+  // big main monitor on the desk
+  ctx.fillStyle = '#2a2140'; ctx.fillRect(14, G - 14, 100, 14);
+  ctx.fillStyle = glitch && Math.floor(now * 8) % 2 ? '#2a0d12' : '#0d0a16'; ctx.fillRect(20, G - 74, 88, 58);
+  ctx.fillStyle = '#4a3b63'; ctx.fillRect(18, G - 76, 92, 2); ctx.fillRect(58, G - 16, 12, 4);
+  if (code) { drawCode(code, typed, 25, G - 62); return; }
+  for (let i = 0; i < 6; i++) {
+    const w = 8 + ((i * 37 + Math.floor(now * 2)) % 38);
+    ctx.fillStyle = i % 3 === 0 ? COLORS.O : '#7ed957';
+    ctx.fillRect(25, G - 68 + i * 7, w, 2);
+  }
+  if (Math.floor(now * 2) % 2) { ctx.fillStyle = '#fff'; ctx.fillRect(25, G - 24, 3, 2); }
 }
 
 const ease = k => 1 - (1 - Math.min(1, Math.max(0, k))) ** 2;
