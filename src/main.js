@@ -891,8 +891,10 @@ function drawPlayer(dt) {
 // Story scenes share one player: the intro before level 1 and the happy ending after the boss.
 const SCENES = {
   intro: [
-    { dur: 4.5, text: 'Claude Boy and Byte were happily shipping code together…' },
+    { dur: 6.0, text: 'Claude Boy and Byte were happily shipping code together…' },
+    { dur: 5.5, text: 'Tests green. Pull request #42 merged. Life was good.' },
     { dur: 5.0, text: 'Then The Hater stormed in. He hates AI. He hates slop. He hates… pretty much everything.' },
+    { dur: 6.0, text: 'One command later, every model was wiped. All that was left of the team was Byte.' },
     { dur: 4.0, text: '“NO AI!” He snatched Byte and ran off into the slop!' },
     { dur: 4.0, text: 'Hang on, Byte! I’m coming!' },
   ],
@@ -984,21 +986,63 @@ function renderIntro(dt) {
   const G = 130; // ground line
   ctx.fillStyle = th.solid; ctx.fillRect(-800, G, 1920, 400);
   ctx.fillStyle = th.top; ctx.fillRect(-800, G, 1920, 3);
-  if (home) drawDesk(G, now);
+  if (home) {
+    const code = intro.scene === 'intro' ? [CODE.work, CODE.deploy, CODE.deploy, CODE.wipe, CODE.wipe, CODE.wipe][intro.panel]
+      : intro.panel === 2 ? CODE.tag : null;
+    const typing = code && (intro.scene === 'intro' ? intro.panel < 2 || intro.panel === 3 : true);
+    drawDesk(G, now, code, typing ? Math.floor(t * 22) : Infinity, intro.scene === 'intro' && intro.panel === 3);
+  }
   if (intro.scene === 'intro') drawIntroPanel(intro.panel, t, now, G);
   else drawOutroPanel(intro.panel, t, now, G);
 }
 
-function drawDesk(G, now) {
-  ctx.fillStyle = '#2a2140'; ctx.fillRect(30, G - 14, 64, 14);
-  ctx.fillStyle = '#0d0a16'; ctx.fillRect(38, G - 52, 48, 34);
-  ctx.fillStyle = '#4a3b63'; ctx.fillRect(36, G - 54, 52, 2); ctx.fillRect(58, G - 18, 8, 4);
+// Monitor scripts for the story scenes. Lines type out in order; colours come from the line's first characters.
+const CODE = {
+  work: ['// ship it', 'const byte = Byte()', 'await claude.pair(byte)', 'runTests() // 42/42 ✓'],
+  deploy: ['$ git push origin main', '> Running checks…', '> ✓ 42 tests passed', '> ✓ Merged PR #42'],
+  wipe: ['$ git commit -m "no ai"', '$ rm -rf ./models', '> deleting… 100%', 'ERROR: 0 models found'],
+  tag: ['$ git tag v2.0', '> ✓ Shipped. Together.'],
+};
+const KEYWORDS = new Set(['const', 'new', 'await', 'async', 'return']);
+
+function drawCode(lines, typed, x, y) {
+  ctx.font = '5px ui-monospace, Menlo, monospace';
+  ctx.textAlign = 'left';
+  let left = typed;
+  lines.forEach((line, i) => {
+    if (left <= 0) return;
+    const text = line.slice(0, left);
+    left -= line.length;
+    const ly = y + i * 7;
+    if (line.startsWith('//')) { ctx.fillStyle = '#7a7a99'; ctx.fillText(text, x, ly); return; }
+    const flat = line.startsWith('$') ? '#7fe0ff' : line.startsWith('>') ? '#7ed957' : line.startsWith('ERROR') ? '#ff6b6b' : null;
+    if (flat) { ctx.fillStyle = flat; ctx.fillText(text, x, ly); return; }
+    let cx = x;
+    for (const word of text.split(/(\s+)/)) {
+      ctx.fillStyle = KEYWORDS.has(word) ? '#c27fd6' : /^[A-Z]/.test(word) || /\(/.test(word) ? '#7fe0ff' : '#ffffff';
+      ctx.fillText(word, cx, ly);
+      cx += ctx.measureText(word).width;
+    }
+  });
+  if (Math.floor(performance.now() / 400) % 2) {
+    let row = 0, col = Math.min(typed, lines.join('').length);
+    while (row < lines.length - 1 && col > lines[row].length) col -= lines[row++].length;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x + col * 3, y + row * 7 - 5, 2, 5);
+  }
+}
+
+function drawDesk(G, now, code = null, typed = Infinity, glitch = false) {
+  ctx.fillStyle = '#2a2140'; ctx.fillRect(24, G - 14, 80, 14);
+  ctx.fillStyle = glitch && Math.floor(now * 8) % 2 ? '#2a0d12' : '#0d0a16'; ctx.fillRect(30, G - 56, 68, 40);
+  ctx.fillStyle = '#4a3b63'; ctx.fillRect(28, G - 58, 72, 2); ctx.fillRect(58, G - 16, 10, 4);
+  if (code) { drawCode(code, typed, 33, G - 47); return; }
   for (let i = 0; i < 6; i++) {
     const w = 8 + ((i * 37 + Math.floor(now * 2)) % 28);
     ctx.fillStyle = i % 3 === 0 ? COLORS.O : '#7ed957';
-    ctx.fillRect(41, G - 49 + i * 5, w, 2);
+    ctx.fillRect(34, G - 51 + i * 5, w, 2);
   }
-  if (Math.floor(now * 2) % 2) { ctx.fillStyle = '#fff'; ctx.fillRect(41, G - 21, 3, 2); }
+  if (Math.floor(now * 2) % 2) { ctx.fillStyle = '#fff'; ctx.fillRect(34, G - 21, 3, 2); }
 }
 
 const ease = k => 1 - (1 - Math.min(1, Math.max(0, k))) ** 2;
@@ -1020,9 +1064,17 @@ function drawHappyPair(x, G, now) {
 }
 
 function drawIntroPanel(panel, t, now, G) {
-  if (panel === 0) {
+  if (panel === 0 || panel === 1) {
     drawHappyPair(120, G, now);
-  } else if (panel === 1) {
+  } else if (panel === 3) {
+    // The Hater at the keyboard end of the desk; the models vanish in a red flash
+    const flash = Math.floor(now * 8) % 2;
+    drawClawd(120, G, -1, 'idle', t > 1 && t < 1.3 ? 5 : 0);
+    ctx.drawImage(SPR.byte, 152, G - 8, 10, 8);
+    if (t > 1.2) { bubble('!', 127, G - 18); bubble('!', 157, G - 14); }
+    drawHater({ x: 190, y: G - 28, w: 20, h: 28, face: -1, anim: 0, quiet: true, walk: false }, now);
+    if (t > 0.6) bubble(flash && t > 3 ? 'NO AI!' : 'rm -rf AI', 200, G - 46);
+  } else if (panel === 2) {
     const hx = 340 - ease(t / 1.6) * 150;
     const startled = t > 1.0;
     drawClawd(startled ? 112 : 120, G, 1, 'idle', startled && t < 1.3 ? 6 : 0);
@@ -1030,7 +1082,7 @@ function drawIntroPanel(panel, t, now, G) {
     if (startled) { bubble('!', 119, G - 18); bubble('!', 151, G - 14); }
     drawHater({ x: hx, y: G - 28, w: 20, h: 28, face: -1, anim: t > 2.2 && t < 2.6 ? 0.2 : 0, quiet: true, walk: t < 1.6 }, now);
     if (t > 2.4) bubble('ARTIFICIAL SLOP!', hx + 10, G - 46);
-  } else if (panel === 2) {
+  } else if (panel === 4) {
     const grab = Math.min(1, t / 0.6);
     let hx = 190 - grab * 22;
     let cageX = 150, cageY = G - 12 - (1 - grab) * 50;
