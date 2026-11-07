@@ -990,7 +990,8 @@ function renderIntro(dt) {
     const code = intro.scene === 'intro' ? [CODE.work, CODE.deploy, CODE.deploy, CODE.wipe, CODE.wipe, CODE.wipe][intro.panel]
       : intro.panel === 2 ? CODE.tag : null;
     const typing = code && (intro.scene === 'intro' ? intro.panel < 2 || intro.panel === 3 : true);
-    drawDesk(G, now, code, typing ? Math.floor(t * 22) : Infinity, intro.scene === 'intro' && intro.panel === 3);
+    drawDesk(G, now, code, typing ? Math.floor(t * 22) : Infinity, intro.scene === 'intro' && intro.panel === 3,
+      intro.scene === 'intro' && (intro.panel > 2 || (intro.panel === 2 && t > 0.8)));
   }
   if (intro.scene === 'intro') drawIntroPanel(intro.panel, t, now, G);
   else drawOutroPanel(intro.panel, t, now, G);
@@ -1111,17 +1112,36 @@ function drawTronScreen(x, y, w, h, now) {
   trail([[0.95, 0.9], [0.95, 0.55], [0.6, 0.55], [0.6, 0.75], [0.2, 0.75]], '#ff8a1f', 0.25);
 }
 
-function drawMonitorWall(G, now) {
-  const y = G - 120, h = 38, w = 52;
-  screenFrame(20, y, w, h, '#28ff5a', (a, b, c, d) => drawMatrixScreen(a, b, c, d, now));
-  screenFrame(78, y, w, h, '#ff2bd6', (a, b, c, d) => drawHackerScreen(a, b, c, d, now));
-  screenFrame(136, y, w, h, '#2fd6ff', (a, b, c, d) => drawTronScreen(a, b, c, d, now));
-  screenFrame(194, y, w, h, '#28ff5a', (a, b, c, d) => drawMatrixScreen(a, b, c, d, now + 7));
-  screenFrame(252, y, w, h, '#ff8a1f', (a, b, c, d) => drawTronScreen(a, b, c, d, now + 3));
+// Every screen without code flips to a flashing warning once The Hater is in the room.
+function drawDangerScreen(x, y, w, h, now) {
+  const on = Math.floor(now * 4) % 2;
+  ctx.fillStyle = on ? '#7a1018' : '#3a0a0e'; ctx.fillRect(x, y, w, h);
+  const cx = x + w / 2, top = y + 4, base = y + 27, half = 13;
+  ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(cx, top - 2); ctx.lineTo(cx + half + 3, base + 2); ctx.lineTo(cx - half - 3, base + 2); ctx.fill();
+  ctx.fillStyle = on ? '#ffe14d' : '#ffb000'; ctx.beginPath(); ctx.moveTo(cx, top + 1); ctx.lineTo(cx + half, base); ctx.lineTo(cx - half, base); ctx.fill();
+  ctx.fillStyle = '#000'; ctx.fillRect(cx - 1.5, top + 9, 3, 9); ctx.fillRect(cx - 1.5, top + 20, 3, 3);
+  ctx.font = 'bold 5px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = on ? '#ffffff' : '#ff9aa0';
+  ctx.fillText('DANGER', cx, y + h - 3);
 }
 
-function drawDesk(G, now, code = null, typed = Infinity, glitch = false) {
-  drawMonitorWall(G, now);
+function drawMonitorWall(G, now, danger = false) {
+  const y = G - 120, h = 38, w = 52;
+  const wall = [
+    [20, drawMatrixScreen, 0, '#28ff5a'],
+    [78, drawHackerScreen, 0, '#ff2bd6'],
+    [136, drawTronScreen, 0, '#2fd6ff'],
+    [194, drawMatrixScreen, 7, '#28ff5a'],
+    [252, drawTronScreen, 3, '#ff8a1f'],
+  ];
+  for (const [x, fn, offset, glow] of wall) {
+    screenFrame(x, y, w, h, danger ? '#ff3b3b' : glow,
+      (a, b, c, d) => (danger ? drawDangerScreen(a, b, c, d, now) : fn(a, b, c, d, now + offset)));
+  }
+}
+
+function drawDesk(G, now, code = null, typed = Infinity, glitch = false, danger = false) {
+  drawMonitorWall(G, now, danger);
   // big main monitor on the desk
   ctx.fillStyle = '#2a2140'; ctx.fillRect(14, G - 14, 100, 14);
   ctx.fillStyle = glitch && Math.floor(now * 8) % 2 ? '#2a0d12' : '#0d0a16'; ctx.fillRect(20, G - 74, 88, 58);
